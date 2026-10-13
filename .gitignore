@@ -1,0 +1,128 @@
+# .gitignore — TourSearch
+#
+# Policy source: docs/architecture.md ("Configuration and secrets"),
+#                docs/scraping.md ("Snapshots"), docs/conventions.md.
+# Everything below is a rule for artifacts that DO NOT belong in git.
+# docs/ and README.md must stay tracked — do not add patterns for them.
+
+# ---------------------------------------------------------------- docs ------
+# Never ignore specification files.
+!docs/**
+!README.md
+
+# ------------------------------------------------------------- secrets ------
+# Credentials never come from a committed file. Local dev uses User Secrets,
+# which generates a *.LocalSecrets.env next to the project.
+*.LocalSecrets.env
+**/*.LocalSecrets.env
+**/appsettings.Local.json
+**/*.local.json
+**/secrets*
+**/.secrets*
+
+# Generic dotenv-style files: only *.example is allowed in the repo.
+.env
+.env.*
+!**/.env.example
+!**/*.env.example
+
+# Private keys / certs — uncomment only if you are sure no legit *.pem/*.crt
+# file must ever be tracked in this repo.
+# *.pem
+# *.crt
+# *.p12
+# *.key
+
+# --------------------------------------------------------- scraped data -----
+# HTML snapshots of TourVisor.ru: third-party content, unbounded, TTL-managed.
+# They live outside the repo (TOURSEARCH_SNAPSHOT_DIR); this is a safety net.
+**/snapshots/**
+!**/fixtures/**
+!**/tests/fixtures/**
+
+# ------------------------------------------------------- Playwright (.NET) --
+# playwright.ps1 (the launcher) IS tracked; the downloaded browser binaries
+# are not. Default cache is ~/.cache/ms-playwright, but the binaries can also
+# land next to the app when PLAYWRIGHT_BROWSERS_PATH is not set.
+**/playwright/**
+!**/playwright.ps1
+**/.cache/ms-playwright/**
+**/chromium-*/
+**/chromium-*@*/
+
+# ------------------------------------------------------------- build --------
+# .NET 10 build cache and generic output dirs.
+.build/
+build/
+dist/
+out/
+target/
+**/obj/
+
+# Compiled artifacts (defensive: these should never be committed anyway).
+*.dll
+*.exe
+*.o
+*.obj
+*.so
+*.a
+*.lib
+*.pdb
+*.ilk
+*.met
+*.pac
+*.dSYM
+*.dSYM.zip
+
+# ------------------------------------------------------------- tests --------
+# Test output, coverage, reporters. Testcontainers generate their own temp dirs.
+**/coverage/**
+*.coverage
+*.coverage.*
+coverage*.json
+coverage*.xml
+coverage*.info
+**/TestResults/**
+**/htmloutput/**
+**/report/**
+*.lcov
+
+# ------------------------------------------------------------- runtime -------
+# Logs, profiling dumps, temp files.
+**/logs/**
+*.log
+*.heapsnapshot
+*.cpuprofile
+*.trace
+*.trace.json.gz
+*.tmp
+*.temp
+**/tmp/**
+*.bak
+*.swp
+*.swo
+*~
+#*#
+*.orig
+*.rej
+
+# --------------------------------------------------------- tooling / OS -----
+.idea/
+*.iml
+.fleet/
+.vscode/
+# If you keep shared editor settings in the repo, un-ignore them:
+# !.vscode/
+*.sublime-workspace
+*.code-workspace
+.DS_Store
+Thumbs.db
+ehthumbs.db
+[Dd]esktop.ini
+node_modules/
+
+# ------------------------------------------------------------- DB / local ---
+# Local PostgreSQL data dirs if someone runs psql inside the repo.
+**/pgs/**
+**/postgres_data/**
+**/data/sql/**

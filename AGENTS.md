@@ -16,6 +16,32 @@ Read in this order. Do not skim:
 5. [docs/mcp-tools.md](./docs/mcp-tools.md) + [docs/scraping.md](./docs/scraping.md) — external contract.
 6. [docs/open-questions.md](./docs/open-questions.md) — what is still undecided and which of those block you.
 
+## 0.1 Who writes the code — delegation is mandatory
+
+**Implementation code is written only by the `task-developer` subagent.** The main agent
+specifies, decides, reviews and owns git; it does not type the implementation itself.
+
+```
+task-creator  →  tasks/NNN-*.md          (specification)
+task-solver   →  orchestrates: delegates the code, verifies behaviour, closes the task
+task-developer → writes the code, proves it builds and the process starts  (never commits)
+```
+
+Rules:
+
+- **Any task that changes more than a trivial amount of code must be delegated** to
+  `task-developer` via the `subagent` tool, passing the task file path and the exact scope.
+  "Trivial" means a one- or two-line edit in a single file; anything larger goes to the
+  subagent.
+- The subagent's responsibility stops at **compiles + starts**. It does not verify feature
+  behaviour, does not certify acceptance criteria and does not decide open questions. The main
+  agent verifies behaviour and accepts the result.
+- The main agent must still read the diff it is about to accept. Delegation is not a substitute
+  for review.
+- One writer per working copy: never run two developer subagents against the same checkout.
+- The model for this role is pinned in `~/.pi/agent/agents/task-developer.md` and can be changed
+  there or overridden per run — see the precedence list in that file. Do not change it silently.
+
 ## 1. Repo state (verify, do not assume)
 
 The repository is **no longer docs-only**. Two states coexist, and they are not the same:

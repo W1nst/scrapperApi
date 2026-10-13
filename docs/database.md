@@ -138,7 +138,7 @@ The shape that must be implemented, and the one EF Core does **not** give us:
   expressed with `db.Query<SearchJob>().UpdateFrom<SearchJob>(...)` / `SqlExpression`, wrapped in `db.Transaction(...)` where a second write is part of the claim.
 - `LeaseToken` is the claiming worker's id; `Attempt + 1` and `LeaseExpiresAt` are written in the **same** statement.
 
-`[REQUIRED-ADR]` — this decision needs an ADR before the Worker is coded (`docs/adr/NNN-job-claim-cas.md`): it fixes the exact statement, the transaction boundary, and the recovery pass that returns an expired lease to `Pending`. A half-implemented claim is a system bug, not a style issue.
+`[REQUIRED-ADR]` — **satisfied**: see [ADR 005](./adr/005-job-claim-atomic-cas.md), which fixes the exact statement, the transaction boundary, and the recovery pass that returns an expired lease to `Pending`. A half-implemented claim is a system bug, not a style issue.
 
 ## Warnings column representation
 

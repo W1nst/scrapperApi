@@ -18,9 +18,16 @@ Read in this order. Do not skim:
 
 ## 1. Repo state (verify, do not assume)
 
-The repository contains **only `docs/`, `README.md`, `AGENTS.md`, `.gitignore`**. There is no `src/`, no `tests/`, no build, no CI, no `.editorconfig`, no license, no `docs/adr/`.
+The repository is **no longer docs-only**. Two states coexist, and they are not the same:
 
-Run `git ls-files` before you act. Anything the docs describe as a project, a config file, or a CI job is `[PLANNED]` until it appears in that list. **Never describe a plan as something that exists.**
+| | Tracked by git (12 files) | Present but **untracked** |
+|---|---|---|
+| Contains | `.gitignore`, `AGENTS.md`, `README.md`, `docs/*.md` | `.editorconfig`, `Directory.Build.props`, `TourSearch.sln`, `src/` (6 projects), `tests/` (2 test projects + `fixtures/`), `tasks/` |
+| Absent entirely | `docs/adr/`, CI config, a license, any real implementation code | — |
+
+Run `git ls-files` **and** `git status` before you act — the tracked list alone no longer tells you what exists. A rule is `[PLANNED]` only if the artifact is missing from the working tree. An artifact that exists but is untracked is neither `[PLANNED]` nor established: do not cite it as a fact, and do not treat it as committed. **Never describe a plan as something that exists.**
+
+The `Program.cs` files under `src/TourSearch.Api` and `src/TourSearch.Worker` are build-only placeholders that exit `1`; they exist so the skeleton compiles and **must not grow** until the gates in §2 are open. Verified state and the list of known dangling references live in [open-questions.md](./docs/open-questions.md#repo-state).
 
 ## 2. Order of work
 
@@ -30,14 +37,14 @@ Each step depends on the previous one. Do not reorder, do not parallelize across
 |---|---|---|
 | 1 | Write the ADRs for every `[DECIDED]` item already recorded in the docs | blocks all coding |
 | 2 | Answer the **blocking** questions in [open-questions.md](./docs/open-questions.md#blocking) or state explicitly that you are using the proposed default | blocks the affected code |
-| 3 | Root tooling: `.editorconfig`, `.slnx`/`.sln`, `TreatWarningsAsErrors`, `*.csproj` templates | — |
+| 3 | Root tooling: `.editorconfig`, `.slnx`/`.sln`, `TreatWarningsAsErrors`, `*.csproj` templates | **done but uncommitted** — verify with `git status` |
 | 4 | `TourSearch.Core` — domain models, `ITourScraper`, status enums, error taxonomy | no I/O here |
 | 5 | `TourSearch.Infrastructure` — the **single** `TourSearchDbContext` | must exist before any migration |
 | 6 | `TourSearch.Infrastructure.Migration` — only `IDesignTimeDbContextFactory` + first migration | see §5 |
 | 7 | `TourSearch.Worker` — job claim, lease, recovery pass | needs the DB schema |
 | 8 | `TourSearch.Api` — MCP server + tools | needs the domain contract |
-| 9 | `TourSearch.Scraper` — Playwright + `selectors.json` | needs fixtures first |
-| 10 | Tests: unit (fixtures) + integration (Testcontainers PostgreSQL) | — |
+| 9 | `TourSearch.Scraper` — Playwright + `selectors.json` | needs fixtures first ([tests/fixtures/README.md](./tests/fixtures/README.md)) |
+| 10 | Tests: unit (fixtures) + integration (Testcontainers PostgreSQL) | no test sources yet; `MSTEST0001` is suppressed as an interim measure in both test projects |
 
 ## 3. Hard rules — violations are not style issues
 
@@ -60,9 +67,11 @@ These are the rules whose violation produces a wrong system, not a cosmetic prob
 ## 4. Verification loop — run after every change
 
 ```bash
-dotnet build TourSearch.sln --all-warnings-as-errors
-dotnet test --summary=brief
+dotnet build TourSearch.sln
+dotnet test TourSearch.sln --verbosity minimal
 ```
+
+> `[FACT]` two spellings that used to be here are **not** real options in the .NET 10 SDK (10.0.401) and are rejected with `MSB1001`: `dotnet build --all-warnings-as-errors` and `dotnet test --summary=brief`. The warnings-as-errors guarantee comes from `TreatWarningsAsErrors` in `Directory.Build.props`, which applies to every project in the sln. Use the commands above verbatim; do not re-invent flags. The `TourSearch.sln` argument to `dotnet test` is required — without it the CLI picks up `bin/` output paths as projects (see §1).
 
 Migrations only through the CLI, always with an explicit `--project`:
 
@@ -100,8 +109,8 @@ Stop and ask. Do not invent. Specifically:
 
 A milestone is done when all of these are true:
 
-1. The code compiles with warnings as errors.
-2. Tests pass, including the parser fixtures, and no test touched the network.
+1. The code compiles with warnings as errors (`dotnet build TourSearch.sln`, §4).
+2. Tests pass, including the parser fixtures, and no test touched the network. `[FACT]` both test projects are currently empty, so `dotnet test` exits `0` without running anything — an empty run does **not** satisfy this item. See [conventions.md](./docs/conventions.md#testing).
 3. The DB state is reachable through the documented transitions only — no ad-hoc status writes.
 4. The MCP contract in [mcp-tools.md](./docs/mcp-tools.md) matches the implementation **field for field**, including `outputSchema`.
 5. Any decision you made on the way is written as an ADR and referenced from the docs.

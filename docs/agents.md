@@ -6,7 +6,7 @@
 
 | Marker | Meaning |
 |---|---|
-| `[PLANNED]` | Not in code — the repo currently contains `docs/`, `README.md`, `AGENTS.md` and a tracked `.gitignore`: no sources, no tests, no CI, no `.editorconfig`, no license, no `docs/adr/` |
+| `[PLANNED]` | Not in code — the artifact does not exist in the working tree. As of 2026-10-13 the tree **does** contain `src/` (6 projects), `tests/` (2 test projects + `tests/fixtures/`), `.editorconfig`, `Directory.Build.props` and `TourSearch.sln`, but **none of them are tracked by git yet**; `docs/adr/`, CI config and a license are absent entirely. See [Repo state](./open-questions.md#repo-state) — verify before trusting any of this. |
 | `[DECIDED]` | Decision made — must be recorded as an ADR (`docs/adr/NNN-*.md`) |
 | `[OPEN]` | Unresolved — see [open-questions.md](./open-questions.md) |
 | `[FACT]` | Verified against external docs / version data |
@@ -47,7 +47,20 @@ In the background the service scrapes **TourVisor.ru**, collects suitable offers
 | [scraping.md](./scraping.md) | Rules for working with TourVisor.ru |
 | [database.md](./database.md) | EF Core, DbContext, migrations, indexes |
 | [conventions.md](./conventions.md) | Code style, DI, logging, tests, git, ADRs |
-| [open-questions.md](./open-questions.md) | Blocking and non-blocking questions with proposed defaults |
+| [open-questions.md](./open-questions.md) | Blocking and non-blocking questions with proposed defaults, and the verified repo state |
+
+## Skills (agent workflow)
+
+Two project-aware skills drive the work. They are Pi skills, installed globally, but bound to this repo's
+specification — paths inside them are relative to the repo root.
+
+| Skill | Command | Role |
+|---|---|---|
+| Task Creator | `/skill:task-creator <краткое описание>` | Interviews the user, then writes an implementation-ready `tasks/NNN-slug.md` with `Status: ready`. Never writes before confirmation. |
+| Task Solver | `/skill:task-solver <путь к задаче>` | Implements **one** named task, verifies every acceptance criterion locally, reports with real evidence, and moves the file to `tasks/done/` after acceptance. |
+
+The queue contract is in [tasks/README.md](../tasks/README.md). A task that fails is left in
+`tasks/` with `Status: blocked` — it is never marked `done` to clear the queue.
 
 ## TL;DR rules for the developer agent
 

@@ -1,0 +1,35 @@
+# .editorconfig — TourSearch
+#
+# Policy source: docs/conventions.md ("Code analysis and style").
+# The repo has no .cs files yet; these rules apply as soon as they appear.
+#
+# NOTE: eol = lf is the canonical form stored in git. This checkout currently
+# has core.autocrlf = true, so working-tree files come out CRLF on Windows.
+# That is a tooling conflict, not a spec conflict; pin it with a .gitattribute
+# (`* text=auto eol=lf`) or core.autocrlf=false if byte-stable checkouts matter.
+
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 4
+
+[*.{csproj,sln,slnx,xml,xlf}]
+indent_style = tab
+
+[*.{json,jsonc,webmanifest}]
+indent_size = 2
+
+[*.{yml,yaml,http}]
+indent_size = 2
+
+[Makefile]
+indent_style = tab
+
+[*.md]
+trim_trailing_whitespace = false
+indent_size = 2

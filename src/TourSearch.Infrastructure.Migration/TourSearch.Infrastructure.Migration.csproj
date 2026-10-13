@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- TourSearch.Infrastructure.Migration — IDesignTimeDbContextFactory + migrations
+       ONLY. It references Infrastructure; it must not redeclare the DbContext
+       (docs/architecture.md: two OnModelCreating() definitions = broken migrations).
+
+       Migrations are always run with an explicit project flag pointing at
+       this folder (docs/architecture.md). -->
+
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../TourSearch.Infrastructure/TourSearch.Infrastructure.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The design-time factory builds its own DbContext, so the provider types
+         have to be visible here even though Infrastructure already declares them. -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.12" />
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.3" />
+    <PackageReference Include="EFCore.NamingConventions" Version="10.0.1" />
+  </ItemGroup>
+
+</Project>

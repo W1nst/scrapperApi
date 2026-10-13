@@ -70,6 +70,15 @@ dist/
 out/
 target/
 **/obj/
+# Build output. Without this, `git add src/` sweeps in every compiled assembly
+# plus the Playwright browser payload under bin/<config>/<tfm>/.playwright/**.
+**/bin/
+# Playwright installs its .NET driver and browser payload as a hidden
+directory next to the app output. The patterns above use `playwright/**`
+(no leading dot), which does NOT match `.playwright/`, so it is listed
+separately — except the launcher, which is meant to be tracked.
+**/.playwright/**
+!**/.playwright/playwright.ps1
 
 # Compiled artifacts (defensive: these should never be committed anyway).
 *.dll

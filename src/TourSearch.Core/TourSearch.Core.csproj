@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- TourSearch.Core — domain models, ITourScraper, status enums, error taxonomy.
+
+       docs/architecture.md ("Dependency rules"): Core depends on nothing but the
+       BCL. No I/O here. Do NOT add a PackageReference or ProjectReference to this
+       file without an ADR that says why. -->
+
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+  </PropertyGroup>
+
+</Project>

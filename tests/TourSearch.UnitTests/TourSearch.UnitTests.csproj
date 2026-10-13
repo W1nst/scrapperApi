@@ -1,0 +1,42 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- TourSearch.UnitTests — domain logic + parser, run against committed fixtures.
+
+       docs/conventions.md ("Testing"): no test may contact TourVisor.ru. Parser
+       tests read known-good HTML snapshots from tests/fixtures/ (see
+       tests/fixtures/README.md). No network, ever. -->
+
+  <PropertyGroup>
+    <OutputType>Test</OutputType>
+    <!-- INTERIM, see docs/adr/036-test-parallelization-policy.md
+
+         MSTest 4.0.2 ships an analyzer that requires every test assembly to state
+         its parallelization policy explicitly (MSTEST0001). This project has no
+         .cs files yet, so there is nothing to parallelize and the diagnostic is a
+         false positive; Directory.Build.props turns it into a build error.
+
+         Do NOT leave this line in once real tests exist. The durable fix is the
+         assembly attribute in a real test file:
+             [assembly: Parallelize(Scope = ExecutionScope.MethodLevel)]
+         or [assembly: DoNotParallelize]
+
+         The spec does not decide this policy (docs/conventions.md "Testing" is
+         silent about it), so it is tracked as open question 12 in
+         docs/open-questions.md and must be answered when the first test is added. -->
+    <NoWarn>$(NoWarn);MSTEST0001</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../../src/TourSearch.Core/TourSearch.Core.csproj" />
+    <ProjectReference Include="../../src/TourSearch.Scraper/TourSearch.Scraper.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="MSTest" Version="4.0.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Microsoft.VisualStudio.TestTools.UnitTesting" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Root build properties for every project in TourSearch.sln.
+
+     Policy source: docs/conventions.md ("Conventions" + "DI"),
+                    docs/architecture.md ("Dependency rules").
+
+     The verification loop in AGENTS.md §4 asks for "build with warnings as
+     errors". The dotnet 10.0.401 CLI has no such build flag (the documented
+     spelling is rejected with MSB1001), so the guarantee is enforced here
+     instead, in one place. -->
+<Project>
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <TreatWarningsAsErrors>ON</TreatWarningsAsErrors>
+  </PropertyGroup>
+
+  <!-- No license is chosen yet (docs/agents.md: "License" is [OPEN]).
+       Do not add <CopyrightNotice> until that decision is made. -->
+
+</Project>

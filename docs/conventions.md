@@ -66,10 +66,12 @@ This file is the single source of truth for rules. If [agents.md](./agents.md) c
 - Conventional Commits: `feat:`, `fix:`, `chore:`, `docs:`, `adr:`.
 - PR required, minimum 1 approve.
 - CI on every PR: `dotnet build` + `dotnet test`. `[PLANNED]` — the repo has no CI config yet; do not describe it as existing.
+- `[FACT]` the solution builds with warnings as errors today, but two spellings in [AGENTS.md §4](../AGENTS.md) are **not real CLI options** in the .NET 10 SDK — `dotnet build --all-warnings-as-errors` and `dotnet test --summary=brief` are both rejected with `MSB1001`. The guarantee is enforced instead by `TreatWarningsAsErrors` in `Directory.Build.props`, which covers every project through the sln. The working loop is `dotnet build TourSearch.sln` + `dotnet test TourSearch.sln --verbosity minimal`; do not copy invented flags into scripts.
+- `[FACT]` `dotnet test` currently reports "no tests available" for both test projects and still exits `0` — the projects contain no `.cs` files yet. A green test run is therefore **not** evidence of coverage; it only proves the tooling is wired. The first real test must also resolve its parallelization policy (see the interim `MSTEST0001` suppression in both test csproj files).
 
 ## Code analysis
 
-- `.editorconfig` at the root — `[PLANNED]`, not present yet.
+- `.editorconfig` at the root — `[FACT]` present (untracked as of 2026-10-13; see [Repo state](./open-questions.md#repo-state)).
 - `TreatWarningsAsErrors` on.
 - StyleCop / Roslyn analyzers where practical.
 
@@ -82,7 +84,8 @@ This file is the single source of truth for rules. If [agents.md](./agents.md) c
 ## ADRs
 
 - Every non-obvious decision gets a file `docs/adr/NNN-title.md`: context, decision, consequences, status.
-- `[PLANNED]` — the `docs/adr/` directory does not exist yet; the decisions already marked `[DECIDED]` in these docs must be written up there before implementation starts.
+- `[FACT]` the directory **exists** and holds the backfill of every decision previously marked `[DECIDED]` — see the index at [docs/adr/README.md](./adr/README.md). The one exception to "decided" is [ADR 036](./adr/036-test-parallelization-policy.md), which is `Proposed` and records an open question on purpose.
+- `[FACT]` the numbering scheme is **3 digits**: `docs/adr/036-test-parallelization-policy.md` is cited from `tests/TourSearch.UnitTests/TourSearch.UnitTests.csproj` and `tests/TourSearch.IntegrationTests/TourSearch.IntegrationTests.csproj`. Ids `016`–`035` are deliberately left free; `036` is reserved, not "next". Never renumber — ids are referenced from docs, csproj comments and commits.
 - A change that contradicts an ADR requires a new ADR that supersedes it — not a silent edit.
 
 ## License

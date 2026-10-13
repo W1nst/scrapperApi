@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- TourSearch.Worker — the ONLY process that starts BackgroundService and the
+       ONLY consumer of Playwright (docs/runtime.md#startup, docs/runtime.md).
+       It owns the job claim (atomic CAS Pending -> InProgress) and lease recovery
+       (docs/runtime.md#restart-semantics). -->
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../TourSearch.Core/TourSearch.Core.csproj" />
+    <ProjectReference Include="../TourSearch.Infrastructure/TourSearch.Infrastructure.csproj" />
+    <ProjectReference Include="../TourSearch.Scraper/TourSearch.Scraper.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Hosting supplies the app lifecycle and BackgroundService;
+         DI supplies AddInfrastructure()/AddScraper() graph registration. -->
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.12" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.12" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.12" />
+  </ItemGroup>
+
+</Project>

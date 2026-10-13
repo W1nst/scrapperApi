@@ -1,0 +1,41 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- TourSearch.IntegrationTests — API + DB, with PostgreSQL from Testcontainers.
+
+       docs/conventions.md ("Testing"): integration tests use Testcontainers
+       PostgreSQL, never a shared/developer database, never the live site.
+       The API process is driven end-to-end over its Streamable HTTP endpoint
+       (docs/runtime.md: Api is a separate process), so it is not a link-time
+       dependency of this project. -->
+
+  <PropertyGroup>
+    <OutputType>Test</OutputType>
+    <!-- INTERIM, see docs/adr/036-test-parallelization-policy.md
+
+         Same reason as in TourSearch.UnitTests: MSTest 4.0.2 requires an explicit
+         parallelization policy (MSTEST0001), this project has no .cs files yet,
+         and Directory.Build.props promotes the diagnostic to a build error.
+
+         Remove this line when the first real test file declares the assembly
+         attribute. For THIS project the choice needs care: the tests share one
+         Testcontainers PostgreSQL instance, so [assembly: Parallelize] over a
+         shared DB is a flakiness hazard. Do not pick it by reflex: see
+         open question 12 in docs/open-questions.md. -->
+    <NoWarn>$(NoWarn);MSTEST0001</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../../src/TourSearch.Core/TourSearch.Core.csproj" />
+    <ProjectReference Include="../../src/TourSearch.Infrastructure/TourSearch.Infrastructure.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="MSTest" Version="4.0.2" />
+    <PackageReference Include="Testcontainers.PostgreSql" Version="4.15.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Microsoft.VisualStudio.TestTools.UnitTesting" />
+  </ItemGroup>
+
+</Project>

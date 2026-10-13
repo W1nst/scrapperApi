@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- TourSearch.Scraper — Playwright navigation + selectors.json parsing.
+
+       docs/architecture.md: depends on Core only. It must NOT depend on
+       Infrastructure: the scraper does no DB work, the Worker owns that.
+       Playwright lives here and in Worker's graph, never in Api
+       (docs/architecture.md#why-api-must-not-depend-on-scraper-decided).
+
+       Microsoft.Playwright is the official .NET port (microsoft/playwright-dotnet);
+       the browser binary must be installed at build time, not on first request
+       (docs/runtime.md). -->
+
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../TourSearch.Core/TourSearch.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Playwright" Version="1.63.0" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.12" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.12" />
+  </ItemGroup>
+
+</Project>

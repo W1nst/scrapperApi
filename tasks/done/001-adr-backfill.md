@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | `ready` |
+| **Status** | `done` |
 | **Type** | docs |
 | **Created (UTC)** | `2026-10-13` |
 | **Affected projects** | none — documentation only, no code changes |
@@ -358,3 +358,71 @@ Recorded while preparing this task; verify before starting, and correct anything
   nothing. Renumbering would break the existing csproj references.
 - **Whether `AGENTS.md` §2 step 1 should be struck once done.** → proposed default: keep the step but
   mark it satisfied, so the ordering of work survives the backfill → blocks: nothing.
+
+## Outcome
+
+| | |
+|---|---|
+| **Completed (UTC)** | `2026-10-13` |
+| **Commit** | `041dd7b` — `docs: backfill docs/adr and commit the project skeleton (tasks/001)` |
+| **Acceptance** | `FR-001`–`FR-007`, `NFR-001`, `NFR-002` pass; `dotnet build` passes; `dotnet test` **not verified** (ran zero tests — see below) |
+| **ADRs** | 16 created: [001](../../docs/adr/001-api-does-not-depend-on-scraper.md)–[015](../../docs/adr/015-singleton-is-for-shared-state.md) (`Accepted`) + [036](../../docs/adr/036-test-parallelization-policy.md) (`Proposed`) + [README](../../docs/adr/README.md) index |
+| **Left open** | ~20 further `[DECIDED]` markers outside the 15 rows; see below |
+
+### Evidence
+
+| Criterion | Check | Result |
+|---|---|---|
+| `FR-001` | `ls docs/adr/*.md \| wc -l` | `17` (16 ADRs + index) |
+| `FR-002` | parse the "Already decided" table, `os.path.exists` each link | `rows: 15, adr links: 17, uncovered rows: []` |
+| `FR-003` | grep the four required headings in every ADR | all complete |
+| `FR-004` | `036` exists with `status: Proposed` | confirmed; both csproj references resolve |
+| `FR-005` | `grep "does not exist yet" docs/conventions.md` | clean |
+| `FR-006` | relative-link + anchor checker | `136 links, 0 broken`; `79 anchors, 0 broken` |
+| `NFR-001` | greps for secrets / live-site calls; marker audit | clean; ADR 013 still carries `[UNVERIFIED-FOR-EF-10]` |
+| `NFR-002` | `wc -l docs/adr/*.md` | 38–76 lines per file |
+| — | `dotnet build TourSearch.sln` | `0 warnings, 0 errors` |
+
+### Not verified
+
+- **`dotnet test`.** Both test projects are empty, so the run prints "no tests available" and exits `0`.
+  **Zero tests executed proves nothing** and covers none of this task's criteria. Documented in
+  `docs/conventions.md#testing`, in `AGENTS.md` §7 item 2, and in this task's `## Verification`.
+- **All acceptance criteria here are documentary.** The task changes no code, so verification is file
+  existence, link resolution and heading presence — not execution. This was pre-registered in the task.
+
+### Decisions made on the way
+
+- **`036` is `Proposed`, deciding nothing.** The policy is not chosen. Both options were verified by
+  reproduction against MSTest 4.0.2 in a throwaway project: with `TreatWarningsAsErrors` on, the build
+  fails with `error MSTEST0001`; each of `[assembly: Parallelize(Scope = ExecutionScope.MethodLevel)]`
+  and `[assembly: DoNotParallelize]` silences it. Those two facts are marked `[FACT]` in ADR 036; the
+  temporary project was deleted.
+- **No new ADR was needed for a decision made during this task.** The only judgement call — leaving
+  `036` undecided — was already prescribed by the task itself.
+- **`open question 12` was added to `docs/open-questions.md`** rather than rewriting the comments in the
+  two test `.csproj` files. The doc extended its numbering to match the existing references, so no test
+  project file was touched.
+
+### Drift found and fixed outside the task scope
+
+`.gitignore` claimed to protect the Playwright launcher and build output, but did not: it covered
+`**/obj/` and not `**/bin/`, and its `playwright/**` patterns missed the hidden `.playwright/` directory
+Playwright installs beside the app output. Staging `src/` would have committed ~395 build-output files,
+345 of them the Chromium payload. Fixed by adding `**/bin/` and `**/.playwright/**`; the staged set went
+from 437 files to 43. This is a spec defect in `.gitignore`, not a task 001 requirement — recorded here
+because it was found and corrected while executing the task.
+
+### Left open
+
+- **~20 further `[DECIDED]` markers** outside the 15 rows are not yet ADRs (TTL defaults, `CurrencyCode = RUB`,
+  `MaxBrowsers = 1`, snapshot TTL, and others). Candidate for a follow-up task; if taken, `FR-002`'s
+  count changes from 15 to ~35.
+- **`036` remains `Proposed`.** The first real test file added to either project must resolve it for that
+  project, replace `Proposed` with `Accepted`, and name the chosen option. The interim `MSTEST0001`
+  suppression stays until then — removing it now would break the build.
+- **The `016`–`035` id gap** is intentional and must not be compacted.
+- **`docs/adr/` was committed with the project skeleton in a single commit.** The task assumed the
+  docs-only baseline described in `AGENTS.md` §1; the tree had already advanced well past it, so the
+  skeleton was committed alongside. If separate history is wanted, that is a rebase decision, not a
+  defect in this task.

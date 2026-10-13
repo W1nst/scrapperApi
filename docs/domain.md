@@ -12,7 +12,7 @@ A tour-search task.
 |---|---|---|
 | `Id` | `Guid` | PK. **Never order or paginate by it** — see [Guid ordering](#guid-ordering) |
 | `ParametersHash` | `string` | canonical hash of params — dedupe/idempotency key, indexed |
-| `Parameters` | `SearchParameters` | owned entity → JSONB |
+| `Parameters` | `SearchParameters` | EF Core 10 **complex type** → JSONB (`ComplexProperty(...).ToJson()`), not the deprecated `OwnsOne(...).ToJson()` — see [database.md](./database.md). It has no identity, so it cannot be queried independently: lookups go through `ParametersHash` |
 | `CurrencyCode` | `char[3]` | `[DECIDED]` `RUB` for now; keep the field from day one |
 | `Status` | `JobStatus` | `Pending`, `InProgress`, `Completed`, `Failed`, `Cancelled` |
 | `Attempt` | `int` | how many times a worker claimed this job |
@@ -32,11 +32,11 @@ A tour-search task.
 | `Retryable` | `bool?` | whether the failure is transient |
 | `Offers` | `List<TourOffer>` | **navigation only** — EF Core reverse-FK accessor, not a column |
 
-### `SearchParameters` (owned → JSONB)
+### `SearchParameters` (EF Core 10 complex type → JSONB)
 
 | Field | Type |
 |---|---|
-| `Region` | `string` | e.g. `"Antalya"`; must be a `Region.Id` returned by `list_regions`, see [mcp-tools.md](./mcp-tools.md#list_regions) |
+| `Region` | `string` | a `Region.Id` **slug**, e.g. `"antalya"` — the value `list_regions` returns and `search_tours.region` accepts, see [mcp-tools.md](./mcp-tools.md#list_regions) |
 | `Adults` | `int` ≥ 1 |
 | `Children` | `int` ≥ 0 |
 | `HotelStars` | `int` 1..5, `0` = any/unknown — see [HotelStars](#hotelstars) |

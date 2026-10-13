@@ -27,6 +27,14 @@ Work queue for this repository. **Tracked in git** — these files are artifacts
   body of the specification, the requirements and their criteria are never rewritten to match what
   was actually built. If the criterion was wrong, the task is blocked and amended by `task-creator`,
   not quietly restated after the fact.
+- **Relative links depend on the file's depth, and the depth changes when it is closed.** A file in
+  `tasks/` reaches `AGENTS.md` as `../AGENTS.md`; after the move to `tasks/done/` the same target is
+  `../../AGENTS.md`. So:
+  - `task-creator` writes links for **`tasks/`** (`../AGENTS.md`, `../docs/...`) — not for `done/`.
+  - `task-solver` rewrites every outbound link to add one level **during the move**, and re-verifies
+    that each link, anchor, and in-`tasks/` target resolves from the new location.
+  - A link that was already wrong stays wrong after a mechanical rewrite. Rewriting is not validation:
+    check that the target exists.
 - `task-solver` implements exactly one named task. It does not pick work from the queue on its own.
 - A failed task is a legitimate end state: leave it in `tasks/` with `Status: blocked` and the
   evidence in `## Blocked`. Never mark a task `done` to clear the queue.

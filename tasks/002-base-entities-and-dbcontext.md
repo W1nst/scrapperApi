@@ -14,7 +14,7 @@ Create the four domain entities (`SearchJob`, `SearchParameters`, `TourOffer`, `
 (`JobStatus`, `JobErrorCode`), and the single `TourSearchDbContext` with its full fluent configuration —
 table names, keys, indexes, the JSONB complex property, enum conversions, and delete behaviours.
 
-This is the **first code in the repository**. It is step 5 of [AGENTS.md §2](../../AGENTS.md) and must
+This is the **first code in the repository**. It is step 5 of [AGENTS.md §2](../AGENTS.md) and must
 exist before any migration (step 6) or worker logic (step 7).
 
 ## Problem
@@ -38,7 +38,7 @@ Four things are currently wrong or unverified in the specification and are fixed
 
 2. **An unconfigured `TourOffer.RegionId → Region` FK silently becomes `ON DELETE CASCADE`.** This
    contradicts the decision that a region is **deactivated, not deleted**
-   ([`docs/domain.md#region-catalog`](../../docs/domain.md#region-catalog)): deleting one region would
+   ([`docs/domain.md#region-catalog`](../docs/domain.md#region-catalog)): deleting one region would
    delete every offer in it.
 
 3. **`docs/domain.md` contradicts itself on `SearchParameters.Region`.** The field is described with the
@@ -60,7 +60,7 @@ Four things are currently wrong or unverified in the specification and are fixed
   enum→string conversions, `char`/`varchar` widths, delete behaviours.
 - Verify the generated schema by script generation (no database required).
 - The first unit tests: entity invariants are **not** tested here (see *Out of scope*), but the
-  **UTC-kind assertion** from [`docs/database.md#utc-trap`](../../docs/database.md#utc-trap) and the
+  **UTC-kind assertion** from [`docs/database.md#utc-trap`](../docs/database.md#utc-trap) and the
   schema-shape assertions are.
 - Resolving **open question 12** (test parallelization policy) — see *Consequences* below.
 - Correcting the four defects listed under *Problem*, and the `[UNVERIFIED-FOR-EF-10]` marker.
@@ -74,7 +74,7 @@ Four things are currently wrong or unverified in the specification and are fixed
   it yet — the parser arrives at step 9. Adding a column nobody writes or tests would be dead schema,
   and its JSON shape is a parser decision. Stays `[PLANNED]`.
 - **`AddInfrastructure()` / DI registration / connection string.** That is runtime configuration
-  ([`docs/runtime.md`](../../docs/runtime.md)) and depends on the deployment question, which is still
+  ([`docs/runtime.md`](../docs/runtime.md)) and depends on the deployment question, which is still
   blocking. This task configures the **model**, not the runtime graph.
 - **Validation of parameter ranges** (`Adults ≥ 1`, `HotelStars 0..5`, `PriceMax ≥ PriceMin`). Decision
   recorded below: it belongs to the MCP tool layer, not the entities.
@@ -90,14 +90,14 @@ Four things are currently wrong or unverified in the specification and are fixed
 **FR-001 — the entities exist in `Core`, and `Core` stays dependency-free**
 
 - `SearchJob`, `SearchParameters`, `TourOffer`, `Region` exist under `src/TourSearch.Core/`.
-- `SearchJob` has exactly the 21 fields of [`docs/domain.md#searchjob`](../../docs/domain.md#searchjob),
+- `SearchJob` has exactly the 21 fields of [`docs/domain.md#searchjob`](../docs/domain.md#searchjob),
   with the documented nullability.
 - `SearchParameters` has exactly the 8 fields of
-  [`docs/domain.md#searchparameters-owned--jsonb`](../../docs/domain.md).
-- `TourOffer` has exactly the 14 fields of [`docs/domain.md#touroffer`](../../docs/domain.md), **minus
+  [`docs/domain.md#searchparameters-owned--jsonb`](../docs/domain.md).
+- `TourOffer` has exactly the 14 fields of [`docs/domain.md#touroffer`](../docs/domain.md), **minus
   `Raw`** (out of scope).
 - `Region` has exactly the 4 fields of
-  [`docs/domain.md#region-catalog`](../../docs/domain.md#region-catalog).
+  [`docs/domain.md#region-catalog`](../docs/domain.md#region-catalog).
 - `TourSearch.Core.csproj` gains **no** `PackageReference` and **no** `ProjectReference`.
 - No entity file contains `using Microsoft.EntityFrameworkCore` or any EF attribute.
 
@@ -108,7 +108,7 @@ returns nothing; a test asserts each entity's property count and types via refle
 
 - `JobStatus` = `Pending, InProgress, Completed, Failed, Cancelled` — in that declaration order.
 - `JobErrorCode` has all 12 codes from
-  [`docs/domain.md#error-taxonomy`](../../docs/domain.md#error-taxonomy): `NETWORK_TIMEOUT`,
+  [`docs/domain.md#error-taxonomy`](../docs/domain.md#error-taxonomy): `NETWORK_TIMEOUT`,
   `NETWORK_UNREACHABLE`, `HTTP_429`, `HTTP_5XX`, `BROWSER_CRASH`, `LEASE_EXPIRED`, `SELECTOR_NOT_FOUND`,
   `PAGE_STRUCTURE_CHANGED`, `ANTI_BOT_DETECTED`, `PARAM_INVALID`, `JOB_NOT_FOUND`, `INTERNAL`.
 - Both are configured `HasConversion<string>()` with an explicit `HasMaxLength`
@@ -153,7 +153,7 @@ a test round-trips each enum value through the conversion and asserts the exact 
 **FR-005 — delete behaviours are explicit and correct**
 
 - `TourOffer.SearchJobId → SearchJob`: `DeleteBehavior.Cascade` — deliberate; offers follow their job
-  ([`docs/database.md#cleanup-ttl`](../../docs/database.md#cleanup-ttl)).
+  ([`docs/database.md#cleanup-ttl`](../docs/database.md#cleanup-ttl)).
 - `TourOffer.RegionId → Region`: `DeleteBehavior.Restrict` — a region is deactivated, never deleted;
   cascade here would silently delete every offer of that region.
 - Both behaviours are asserted, not left to convention.
@@ -168,7 +168,7 @@ a test round-trips each enum value through the conversion and asserts the exact 
 - `docs/database.md`: the `RegionId` FK is shown with `OnDelete(DeleteBehavior.Restrict)` and the reason.
 - `docs/domain.md`: the `SearchParameters.Region` example is corrected from `"Antalya"` to a slug
   (`"antalya"`), matching `Region.Id` and what `list_regions` returns.
-- `docs/database.md` + [ADR 013](../../docs/adr/013-warnings-is-a-native-pg-array.md): the
+- `docs/database.md` + [ADR 013](../docs/adr/013-warnings-is-a-native-pg-array.md): the
   `[UNVERIFIED-FOR-EF-10]` marker is replaced with the verified fact, naming the versions it was
   verified against.
 
@@ -188,7 +188,7 @@ correctness guard, not a style check.
 
 - `MSTEST0001` is resolved by an assembly-level attribute in a real test file, and the interim
   `<NoWarn>$(NoWarn);MSTEST0001</NoWarn>` is **removed** from `tests/TourSearch.UnitTests/TourSearch.UnitTests.csproj`.
-- [ADR 036](../../docs/adr/036-test-parallelization-policy.md) moves from `Proposed` to `Accepted`,
+- [ADR 036](../docs/adr/036-test-parallelization-policy.md) moves from `Proposed` to `Accepted`,
   naming the chosen policy and the reason.
 - `docs/open-questions.md` question 12 is marked resolved and links to the ADR.
 - The **integration** test project keeps its suppression: it has no test file yet, and its shared
@@ -228,7 +228,7 @@ project in a later task.
 `Core` must stay dependency-free: entities are POCOs and **all** EF configuration lives in
 `Infrastructure`'s fluent API. Using EF attributes on the entities would require a
 `Microsoft.EntityFrameworkCore` reference in `Core`, violating
-[`docs/architecture.md`](../../docs/architecture.md) ("Core depends on nothing but the BCL") — and
+[`docs/architecture.md`](../docs/architecture.md) ("Core depends on nothing but the BCL") — and
 `TourSearch.Core.csproj` carries an explicit comment forbidding that without an ADR.
 
 ### Verified findings (reproduction, not memory)
@@ -324,9 +324,9 @@ relevant when parser fixtures arrive.
 | Rule | Applies | How the implementation respects it |
 |---|---|---|
 | `Api` must not depend on `Scraper` | **yes** (indirectly) | no `Scraper` reference is added to `Core`, `Infrastructure` or the test project's graph in a way that reaches `Api`. `Api` still references only `Core` + `Infrastructure` |
-| One `TourSearchDbContext` in `Infrastructure` | **yes — this task creates it** | declared once, in `Infrastructure`; the Migration project is untouched and will reference it, not redeclare it ([ADR 002](../../docs/adr/002-migration-references-runtime-dbcontext.md)) |
+| One `TourSearchDbContext` in `Infrastructure` | **yes — this task creates it** | declared once, in `Infrastructure`; the Migration project is untouched and will reference it, not redeclare it ([ADR 002](../docs/adr/002-migration-references-runtime-dbcontext.md)) |
 | Exactly one process starts `BackgroundService` (Worker) | no | no hosted service, no DI registration in this task |
-| Job claim = atomic CAS (`Pending → InProgress`, lease + attempt+1) | **partially** | this task creates the **columns and the `(status, created_at)` index** the CAS needs; the claim statement itself is step 7 and needs [ADR 005](../../docs/adr/005-job-claim-atomic-cas.md)'s mechanism |
+| Job claim = atomic CAS (`Pending → InProgress`, lease + attempt+1) | **partially** | this task creates the **columns and the `(status, created_at)` index** the CAS needs; the claim statement itself is step 7 and needs [ADR 005](../docs/adr/005-job-claim-atomic-cas.md)'s mechanism |
 | Every persisted `DateTime` is UTC | **yes** | every `DateTime`/`DateTime?` field is documented as UTC; FR-007 adds the enforcement test. Npgsql throws on non-UTC, so a miss is a runtime failure, not a silent corruption |
 | Transient error must not permanently fail a job | **yes** | `Retryable` is `bool?` and `ErrorCode` is a nullable enum, so "not yet failed" is representable; the taxonomy is preserved verbatim by FR-002 |
 | Partial parse = `Completed` + `Degraded = true` + `Warnings` | **yes** | `Degraded`, `Warnings` (`text[]`) and `OffersCount` all exist on `SearchJob`, so the state is representable without schema change |
@@ -388,7 +388,7 @@ every arrow above is representable. Writing them is step 7.
 
 | ADR | Action | Context |
 |---|---|---|
-| [ADR 036](../../docs/adr/036-test-parallelization-policy.md) | **update** `Proposed` → `Accepted` | the first real test forces the policy; FR-008 |
+| [ADR 036](../docs/adr/036-test-parallelization-policy.md) | **update** `Proposed` → `Accepted` | the first real test forces the policy; FR-008 |
 | new `docs/adr/037-parameters-mapped-as-complex-type.md` | **create** | `ComplexProperty().ToJson()` vs `OwnsOne().ToJson()`, and the accepted limitation that JSON members cannot be queried as columns. This is a non-obvious, lasting decision that `docs/domain.md` currently contradicts |
 | new `docs/adr/038-parameter-validation-at-tool-layer.md` | **create** | validation deliberately not in entities and not in the database; records the accepted risk that a second writer could store invalid data |
 | new `docs/adr/039-region-delete-restrict.md` | **create** | `Restrict` on `RegionId` versus EF's `Cascade` default, tied to "regions are deactivated, not deleted" |

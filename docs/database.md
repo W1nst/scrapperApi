@@ -8,7 +8,10 @@ Status legend: [agents.md](./agents.md#status-legend).
 
 ## Conventions
 
-- **snake_case** for tables and columns — via the community plugin `EFCore.NamingConventions` (`modelBuilder.UseSnakeCaseNamingConvention()`). `[FACT]` the plugin is **not** part of official EF Core and is not Microsoft-supported. `[FACT]` a `10.0.1` release exists (published 2026-01-22, targets .NET 10) — see <https://www.nuget.org/packages/EFCore.NamingConventions>; pin the exact version in `*.csproj`, do not assume it.
+- **snake_case** for tables and columns — via the community plugin `EFCore.NamingConventions`. `[FACT]` the plugin is **not** part of official EF Core and is not Microsoft-supported. `[FACT]` a `10.0.1` release exists (published 2026-01-22, targets .NET 10) — see <https://www.nuget.org/packages/EFCore.NamingConventions>; pin the exact version in `*.csproj`, do not assume it.
+- `[FACT]` **where** the plugin is applied, verified by reproduction on 10.0.1: it is an extension on **`DbContextOptionsBuilder`**, not on `ModelBuilder`. `modelBuilder.UseSnakeCaseNamingConvention()` does **not** compile —
+  `error CS1929: "ModelBuilder" не содержит определение для "UseSnakeCaseNamingConvention"`. Chain it onto the options instead:
+  `new DbContextOptionsBuilder<TourSearchDbContext>().UseNpgsql(...).UseSnakeCaseNamingConvention()`. Consequence: column and index names depend on every caller chaining it, so `AddInfrastructure()` must do so. Table names are explicit (`ToTable`) and therefore unaffected.
 - **UTC** for every `DateTime`.
 - **`AsNoTracking()`** by default for reads.
 - **JSONB** for raw scraped payload.
@@ -61,7 +64,10 @@ public class TourSearchDbContext : DbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        modelBuilder.UseSnakeCaseNamingConvention();   // EFCore.NamingConventions
+        // NOTE: snake_case is NOT applied here. UseSnakeCaseNamingConvention() is an
+        // extension on DbContextOptionsBuilder in EFCore.NamingConventions 10.0.1, not on
+        // ModelBuilder — the modelBuilder call is a CS1929 compile error. It belongs in
+        // the options chain: UseNpgsql(...).UseSnakeCaseNamingConvention()
         modelBuilder.HasDefaultSchema("tour_search");
 
         modelBuilder.Entity<SearchJob>(b =>
@@ -91,8 +97,17 @@ public class TourSearchDbContext : DbContext
              .HasForeignKey(x => x.SearchJobId)
              .OnDelete(DeleteBehavior.Cascade);   // documented below
 
+            // A region is deactivated, never deleted (domain.md#region-catalog), so this FK
+            // must NOT cascade. [FACT] verified by reproduction: an unconfigured reference to
+            // Region generates ON DELETE CASCADE here, which would delete every offer of a
+            // deleted region. Restrict is mandatory, not a preference.
+            b.HasOne<Region>()
+             .WithMany()
+             .HasForeignKey(x => x.RegionId)
+             .OnDelete(DeleteBehavior.Restrict);
+
             b.HasIndex(x => x.RegionId);          // list_regions counts + region filter
-            b.HasIndex(x => x.ScrapedAt);         // offer pagination cursor
+            b.HasIndex(x => x.ScrapedAt, x => x.Id);  // offer pagination cursor (scraped_at, id)
             b.HasIndex(x => x.Price);
             b.HasIndex(x => x.CheckIn);
         });
@@ -144,7 +159,7 @@ The shape that must be implemented, and the one EF Core does **not** give us:
 
 `List<string> Warnings` on `SearchJob`:
 
-- `[FACT]` EF Core 8+ maps primitive collections (`List<string>`, `string[]`) automatically, and **on Npgsql they map to native PostgreSQL array columns** — so `warnings text[]` is the default, and no child table is needed. Sources: the EF 8.0 What's New primitive-collections section, the Npgsql 8.0 release notes ("the PostgreSQL driver aligned its PostgreSQL array support"), and the Npgsql provider docs. `[UNVERIFIED-FOR-EF-10]` — re-check against the installed Npgsql provider version before coding; the array mapping has been stable since 8.0 but is asserted here for 8.0, not for 10.x.
+- `[FACT]` EF Core 8+ maps primitive collections (`List<string>`, `string[]`) automatically, and **on Npgsql they map to native PostgreSQL array columns** — so `warnings text[]` is the default, and no child table is needed. Sources: the EF 8.0 What's New primitive-collections section, the Npgsql 8.0 release notes ("the PostgreSQL driver aligned its PostgreSQL array support"), and the Npgsql provider docs. **Verified for EF 10 as well** (2026-10-13, by reproduction): with `Microsoft.EntityFrameworkCore` 10.0.12 + `Npgsql.EntityFrameworkCore.PostgreSQL` 10.0.3 the generated DDL contains `warnings text[] NOT NULL`, and the property's column type reads back as `text[]` with CLR type `List<string>`. The earlier `[UNVERIFIED-FOR-EF-10]` marker is therefore closed.
 - Filtering a PG array column is not index-served the way a scalar column is; nothing filters by `Warnings`, so that is acceptable.
 - If a JSON array is ever preferred (for example to index into it), use an EF Core 10 complex type with `ToJson()` — not the deprecated `OwnsOne` form. See [JSON Mapping](https://www.npgsql.org/efcore/mapping/json.html).
 - A child table (`search_job_warnings`) is **not** used: warnings are read only with their job, never joined, and a child table would make the "warnings belong to this job" rule a convention instead of a type.

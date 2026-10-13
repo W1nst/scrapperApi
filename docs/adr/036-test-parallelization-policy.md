@@ -1,15 +1,14 @@
-# ADR 036 — Test parallelization policy (undecided)
+# ADR 036 — Test parallelization policy
 
-- **Status:** **Proposed** — the policy is **not decided**
+- **Status:** **Accepted** — decided 2026-10-13
 - **Date:** 2026-10-13
-- **Stated in:** [`docs/conventions.md#testing`](../conventions.md#testing) (silent on this) and the `INTERIM` comments in both test `.csproj` files
+- **Stated in:** [`docs/conventions.md#testing`](../conventions.md#testing)
+- **Supersedes:** the `Proposed` version of this same file
 
-> This file exists to **reserve the id** and record the question. It deliberately decides nothing.
-> Both `tests/TourSearch.UnitTests/TourSearch.UnitTests.csproj` and
-> `tests/TourSearch.IntegrationTests/TourSearch.IntegrationTests.csproj` already cite
-> `docs/adr/036-test-parallelization-policy.md`, so the id and filename are fixed by existing text.
-> Choosing a policy here, inside a documentation-backfill task, would be inventing a decision —
-> `AGENTS.md` §5 forbids it.
+> This file originally reserved the id and decided nothing, because the policy is not stated anywhere
+> in the specification and choosing it inside a documentation-backfill task would have been inventing a
+> decision. The first real test file (task `002`) forced the choice, so it is made here — for the unit
+> project only. The integration project is still undecided, and its `INTERIM` `NoWarn` stays.
 
 ## Context
 
@@ -47,29 +46,43 @@ the integration project.
 
 ## Decision
 
-**None — this ADR is `Proposed`.** The decision is deferred to a dedicated task.
+**Decision — the unit test project parallelizes at method level.**
 
-Recorded, for that future decision:
+`tests/TourSearch.UnitTests/AssemblyInfo.cs` declares:
 
-- **Option A — parallelize at method level.** `[assembly: Parallelize(Scope = ExecutionScope.MethodLevel)]`.
-  `[FACT]` verified by reproduction: this silences `MSTEST0001`.
-- **Option B — do not parallelize.** `[assembly: DoNotParallelize]`.
-  `[FACT]` verified by reproduction: this also silences `MSTEST0001`.
-- The two options are not mutually exclusive across projects: the unit project and the integration
-  project may legitimately choose differently, given the shared-database constraint above.
-- A third, unverified possibility — parallelizing integration tests with per-class or per-test databases
-  — is **not** covered by this ADR and would need its own analysis of the Testcontainers setup.
+```csharp
+[assembly: Parallelize(Scope = ExecutionScope.MethodLevel)]
+```
+
+and the interim `<NoWarn>$(NoWarn);MSTEST0001</NoWarn>` has been **removed** from
+`tests/TourSearch.UnitTests/TourSearch.UnitTests.csproj`, so the analyzer now enforces the policy rather
+than being silenced.
+
+Reasoning: the unit tests added in task `002` are in-memory assertions over the CLR model and the
+generated DDL script (`GenerateCreateScript()`, `context.Model`). They share no state — no database, no
+file, no server, no static mutable field — so method-level parallelization is safe and shortens the run.
+
+**Still undecided — the integration test project.** Its `<NoWarn>$(NoWarn);MSTEST0001</NoWarn>` remains
+and must **not** be removed until that project has a test file, because it shares **one** Testcontainers
+PostgreSQL instance across all tests. `[assembly: Parallelize]` over a shared database is a flakiness
+hazard (tests racing on the same schema and rows), so its answer is a separate decision, not a copy of
+this one. Options when it is taken:
+
+- `[assembly: DoNotParallelize]` — simplest, slowest, correct by construction.
+- `[assembly: Parallelize]` with per-class isolation, if the Testcontainers fixture is ever reworked to
+give each parallel unit its own database.
+
+`[FACT]` both options silence `MSTEST0001` — verified by reproduction against MSTest 4.0.2 (see the
+previous version of this file's findings, retained below).
 
 ## Consequences
 
-- The dangling reference is resolved: both `.csproj` comments now point at an existing file.
-- The `[PLANNED]`/`[OPEN]` state of this policy is explicit rather than implied by a suppression whose
-  reason lived only in an XML comment.
-- **The interim suppression stays.** Removing it before the policy is decided would break the build with
-  `MSTEST0001`, since both projects have no test file in which to declare the attribute.
-- The first real test file added to either project **must** resolve this for its project, and must
-  replace `Proposed` here with `Accepted`, naming the chosen option and the reason. Until then, a green
-  `dotnet test` proves only that the tooling is wired — see `docs/conventions.md#testing`.
+- `MSTEST0001` is resolved in the unit project by a **real declaration**, not by suppression. A future
+  contributor who deletes the attribute gets a build error, which is the intended behaviour.
+- The unit suite runs faster and stays deterministic, because it shares no state.
+- The integration project keeps its interim suppression, and its comment says why. That suppression is a
+  known, tracked debt tied to open question 12, which remains partly open.
+- **Open question 12 stays open for the integration project** and must be resolved when its first test
+  file is added; the answer here is a precedent, not a template.
 - The earlier references in both `.csproj` files to "open question 12" in `docs/open-questions.md` are
-  **wrong**: that file has 11 questions. Either the numbering must be extended with this question, or
-  those comments must point at this ADR instead. Tracked in the task outcome.
+  now correct: question 12 exists and points at this ADR.

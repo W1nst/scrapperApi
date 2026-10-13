@@ -58,6 +58,9 @@ This file is the single source of truth for rules. If [agents.md](./agents.md) c
 - **Integration tests** — API + DB via **Testcontainers (PostgreSQL)**.
 - **No test may contact TourVisor.ru.**
 - Naming: `MethodName_Scenario_ExpectedResult`.
+- **Parallelization is declared explicitly, never suppressed.** `[FACT]` MSTest 4.0.2 makes `MSTEST0001` an error ("declare the parallelization policy"), and `TreatWarningsAsErrors` promotes it to a build failure. Declare it as an assembly attribute in a real test file: `[assembly: Parallelize(Scope = ExecutionScope.MethodLevel)]` for state-free suites, `[assembly: DoNotParallelize]` when tests share a resource. Do **not** silence it with `NoWarn` — see [ADR 036](./adr/036-test-parallelization-policy.md).
+  - Currently: `TourSearch.UnitTests` declares method-level parallelization. `TourSearch.IntegrationTests` still carries an interim `NoWarn` because it has no test file yet and shares one Testcontainers instance; that is tracked debt in [open-questions.md](./open-questions.md) question 12.
+- **A green test run proves nothing if zero tests ran.** `dotnet test` exits `0` while reporting "no tests available". Check the executed count before treating a run as evidence.
 - Parser regression tests use committed "known good" snapshots under `tests/fixtures/` (a deliberate, size-capped subset — not the runtime snapshot directory).
 
 ## Git

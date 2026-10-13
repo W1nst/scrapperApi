@@ -8,31 +8,31 @@
 
   <PropertyGroup>
     <OutputType>Test</OutputType>
-    <!-- INTERIM, see docs/adr/036-test-parallelization-policy.md
+    <!-- Parallelization policy (MSTEST0001, open question 12): declared where the
+         analyzer wants it — as an assembly attribute in AssemblyInfo.cs, not as a
+         NoWarn. Chosen policy: [assembly: Parallelize(Scope = ExecutionScope.MethodLevel)]
+         — these tests are in-memory model/reflection assertions that share no state.
+         See docs/adr/036-test-parallelization-policy.md.
 
-         MSTest 4.0.2 ships an analyzer that requires every test assembly to state
-         its parallelization policy explicitly (MSTEST0001). This project has no
-         .cs files yet, so there is nothing to parallelize and the diagnostic is a
-         false positive; Directory.Build.props turns it into a build error.
-
-         Do NOT leave this line in once real tests exist. The durable fix is the
-         assembly attribute in a real test file:
-             [assembly: Parallelize(Scope = ExecutionScope.MethodLevel)]
-         or [assembly: DoNotParallelize]
-
-         The spec does not decide this policy (docs/conventions.md "Testing" is
-         silent about it), so it is tracked as open question 12 in
-         docs/open-questions.md and must be answered when the first test is added. -->
-    <NoWarn>$(NoWarn);MSTEST0001</NoWarn>
+         The integration test project keeps its interim suppression: it still has no
+         .cs file, and its shared Testcontainers PostgreSQL makes the policy a separate
+         decision. -->
   </PropertyGroup>
 
   <ItemGroup>
     <ProjectReference Include="../../src/TourSearch.Core/TourSearch.Core.csproj" />
+    <ProjectReference Include="../../src/TourSearch.Infrastructure/TourSearch.Infrastructure.csproj" />
     <ProjectReference Include="../../src/TourSearch.Scraper/TourSearch.Scraper.csproj" />
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="MSTest" Version="4.0.2" />
+    <!-- The model-shape tests build the model and read the generated script, so they
+         need EF Core, the Npgsql provider and the snake_case naming plugin directly.
+         Versions mirror src/TourSearch.Infrastructure/TourSearch.Infrastructure.csproj. -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.12" />
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.3" />
+    <PackageReference Include="EFCore.NamingConventions" Version="10.0.1" />
   </ItemGroup>
 
   <ItemGroup>

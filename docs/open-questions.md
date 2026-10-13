@@ -26,7 +26,7 @@ These change the shape of the code. They cannot be deferred to "later, while cod
 | 9 | **Monitoring** — Prometheus / OpenTelemetry | OpenTelemetry from the start; metrics: jobs by status, parse success/failure, scrape duration, browser RSS |
 | 10 | **Secrets in production** — Vault / AWS Secrets Manager / plain env | Plain env vars for the first deployment; a secret manager is a later, explicit step |
 | 11 | **PostgreSQL version** — what is deployed | Not pinned anywhere; pin it before any `uuidv7()` / version-gated feature claim (see [database.md](./database.md#uuid-vs-uuid7)) |
-| 12 | **Test parallelization policy** — `[assembly: Parallelize]` vs `[assembly: DoNotParallelize]`, and whether the unit and integration projects answer differently | Not decided. Recorded in [ADR 036](./adr/036-test-parallelization-policy.md) as `Proposed`; must be resolved when the first real test file is added. The integration project shares one Testcontainers PostgreSQL instance, so parallelizing it is a flakiness hazard |
+| 12 | **Test parallelization policy** — `[assembly: Parallelize]` vs `[assembly: DoNotParallelize]`, and whether the unit and integration projects answer differently | **Partly resolved.** Unit project: `Parallelize(Scope = ExecutionScope.MethodLevel)` — decided, see [ADR 036](./adr/036-test-parallelization-policy.md). **Integration project still open**: it shares one Testcontainers PostgreSQL instance, so parallelizing it is a flakiness hazard. Must be decided when that project gets its first test file — until then its interim `MSTEST0001` `NoWarn` stays |
 
 ## Already decided (written up as ADRs — see [docs/adr/](./adr/README.md))
 

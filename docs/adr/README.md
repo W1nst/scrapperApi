@@ -23,12 +23,14 @@ from `tests/*/*.csproj` comments, and from commit messages.
 | [013](./013-warnings-is-a-native-pg-array.md) | `Warnings` is a native PostgreSQL array column, not a child table | Accepted | [database.md](../database.md#warnings-column-representation) |
 | [014](./014-honest-ua-no-evasion.md) | Honest UA, no evasion by default | Accepted | [scraping.md](../scraping.md) |
 | [015](./015-singleton-is-for-shared-state.md) | `Singleton` is for shared state, not stateless helpers | Accepted | [conventions.md](../conventions.md#di) |
-| [036](./036-test-parallelization-policy.md) | Test parallelization policy — **undecided** | **Proposed** | [conventions.md](../conventions.md#testing) |
+| [036](./036-test-parallelization-policy.md) | Test parallelization — method-level for the unit project | Accepted | [conventions.md](../conventions.md#testing) |
+| [037](./037-parameters-mapped-as-complex-type.md) | `SearchParameters` is a complex type mapped to JSONB | Accepted | [database.md](../database.md) |
+| [038](./038-parameter-validation-at-tool-layer.md) | Parameter validation lives at the MCP tool layer | Accepted | [domain.md](../domain.md#error-taxonomy) |
+| [039](./039-region-delete-restrict.md) | `TourOffer.RegionId` restricts deletes; it does not cascade | Accepted | [domain.md](../domain.md#region-catalog) |
 
 Ids `016`–`035` are free. `036` is **reserved**, not "next": both test `.csproj` files already cite
 `docs/adr/036-test-parallelization-policy.md`, so the number is fixed by existing text. Do not compact
 the range.
-
 ## Adding an ADR
 
 1. Take the next free id. Never reuse one.

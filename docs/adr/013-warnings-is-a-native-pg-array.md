@@ -15,9 +15,11 @@ join, a cascade rule, and a second entity, to serve data that is only ever rende
 parent.
 
 EF Core 8+ maps primitive collections automatically, and on Npgsql they map to **native PostgreSQL array
-columns**. `[UNVERIFIED-FOR-EF-10]` — `docs/database.md` marks this as asserted for EF 8.0 and to be
-re-checked against the installed provider version before coding; the array mapping has been stable since
-8.0 but is written up there for 8.0, not for 10.x.
+columns**. `[FACT]` **verified by reproduction on 2026-10-13** against the pinned stack
+(`Microsoft.EntityFrameworkCore` 10.0.12, `Npgsql.EntityFrameworkCore.PostgreSQL` 10.0.3): the generated
+DDL contains `warnings text[] NOT NULL`, and the property's column type reads back as `text[]` with CLR
+type `List<string>`. The earlier `[UNVERIFIED-FOR-EF-10]` marker is closed — the mapping holds on EF 10,
+not only 8.x.
 
 ## Decision
 
@@ -34,7 +36,7 @@ re-checked against the installed provider version before coding; the array mappi
   "find all jobs with warning X", that is a new requirement and may justify revisiting this decision —
   but it would then need its own ADR, not a silent schema change.
 - Empty-array-not-null keeps `Warnings` total: consumers never branch on null.
-- **This ADR carries an unverified claim.** `docs/database.md` explicitly marks the EF 10 behaviour
-  `[UNVERIFIED-FOR-EF-10]`. Do not upgrade it to `[FACT]` without reproducing it against the installed
-  `Npgsql.EntityFrameworkCore.PostgreSQL` version. If EF 10 maps it differently (for example as JSON),
-  this ADR must be superseded rather than quietly edited.
+- **This ADR's central claim is now verified, not asserted.** It was previously marked
+  `[UNVERIFIED-FOR-EF-10]`; it has been reproduced against the pinned stack and the marker is closed.
+  If a future EF or Npgsql version maps the collection differently (for example as JSON), this ADR must
+  be superseded rather than quietly edited.

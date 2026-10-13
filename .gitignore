@@ -3,12 +3,12 @@
 # Policy source: docs/architecture.md ("Configuration and secrets"),
 #                docs/scraping.md ("Snapshots"), docs/conventions.md.
 # Everything below is a rule for artifacts that DO NOT belong in git.
-# docs/ and README.md must stay tracked — do not add patterns for them.
+# docs/ and README.md must stay tracked — the negations for them are at the
+# END of this file, because gitignore is last-match-wins and an earlier
+# negation can be re-ignored by any later pattern.
 
 # ---------------------------------------------------------------- docs ------
-# Never ignore specification files.
-!docs/**
-!README.md
+# Specification files are never ignored. See the !docs/** rules at the bottom.
 
 # ------------------------------------------------------------- secrets ------
 # Credentials never come from a committed file. Local dev uses User Secrets,
@@ -17,8 +17,16 @@
 **/*.LocalSecrets.env
 **/appsettings.Local.json
 **/*.local.json
-**/secrets*
-**/.secrets*
+# Narrow on purpose: this repo runs with core.ignorecase = true, so **/secrets*
+# would also ignore a real source file named Secrets.cs. List the shapes instead.
+**/secrets
+**/secrets.json
+**/secrets.env
+**/secrets.toml
+**/secrets.yaml
+**/secrets.yml
+**/.secrets
+**/.secrets.*
 
 # Generic dotenv-style files: only *.example is allowed in the repo.
 .env
@@ -37,18 +45,22 @@
 # HTML snapshots of TourVisor.ru: third-party content, unbounded, TTL-managed.
 # They live outside the repo (TOURSEARCH_SNAPSHOT_DIR); this is a safety net.
 **/snapshots/**
-!**/fixtures/**
-!**/tests/fixtures/**
+
+# Scratch helpers written while auditing these docs (e.g. .tmp-anchor-check.js).
+.tmp-*
+tmp-*
 
 # ------------------------------------------------------- Playwright (.NET) --
 # playwright.ps1 (the launcher) IS tracked; the downloaded browser binaries
-# are not. Default cache is ~/.cache/ms-playwright, but the binaries can also
-# land next to the app when PLAYWRIGHT_BROWSERS_PATH is not set.
+# are not. Default cache is ~/.cache/ms-playwright; with PLAYWRIGHT_BROWSERS_PATH
+# unset they also land next to the app under ms-playwright/.
 **/playwright/**
 !**/playwright.ps1
 **/.cache/ms-playwright/**
-**/chromium-*/
-**/chromium-*@*/
+**/ms-playwright/**
+# Deliberately NO bare **/chromium-*/ pattern: it matches tests/fixtures/chromium-10/,
+# and a file inside an excluded directory cannot be re-included by a later negation,
+# so **/fixtures/** could not rescue it. Fixture dirs are kept by not matching them at all.
 
 # ------------------------------------------------------------- build --------
 # .NET 10 build cache and generic output dirs.
@@ -84,7 +96,8 @@ coverage*.xml
 coverage*.info
 **/TestResults/**
 **/htmloutput/**
-**/report/**
+# Anchored: a bare **/report/** would ignore docs/report/x.md, which is a spec file.
+/report/**
 *.lcov
 
 # ------------------------------------------------------------- runtime -------
@@ -97,7 +110,9 @@ coverage*.info
 *.trace.json.gz
 *.tmp
 *.temp
-**/tmp/**
+# Anchored: a bare **/tmp/** would ignore src/**/Tmp/** source files, which are
+# legitimate on a case-insensitive filesystem.
+/tmp/**
 *.bak
 *.swp
 *.swo
@@ -126,3 +141,10 @@ node_modules/
 **/pgs/**
 **/postgres_data/**
 **/data/sql/**
+
+# ---------------------------------------------------------------- docs ------
+# LAST MATCH WINS — these negations must come after every ignore rule above so
+# that no later pattern can re-ignore the specification.
+!docs/**
+!README.md
+!AGENTS.md

@@ -8,12 +8,14 @@ Backend service for tour-offer search, exposed to external AI agents via **MCP (
 |---|---|
 | Stack | .NET 10 (LTS), ASP.NET Core Minimal APIs, EF Core 10 + PostgreSQL, Playwright for .NET |
 | Processes | `TourSearch.Api` (MCP endpoint) + `TourSearch.Worker` (scraping) |
-| Status | **Docs only** — no sources in this repository yet |
+| Status | **Docs only** — no sources, no tests, no CI; `AGENTS.md` and `.gitignore` are already tracked |
 
 ## Layout
 
 ```
-docs/     # specification and design decisions
+docs/       # specification and design decisions
+AGENTS.md   # operational instructions for the agent that implements this app
+.gitignore  # tracked; policy source is docs/architecture.md + docs/scraping.md
 ```
 
 ## Note

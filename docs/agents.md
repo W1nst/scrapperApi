@@ -6,7 +6,7 @@
 
 | Marker | Meaning |
 |---|---|
-| `[PLANNED]` | Not in code — the repo currently contains only `docs/`: no sources, no `.gitignore`, no CI, no `.editorconfig` |
+| `[PLANNED]` | Not in code — the repo currently contains `docs/`, `README.md`, `AGENTS.md` and a tracked `.gitignore`: no sources, no tests, no CI, no `.editorconfig`, no license, no `docs/adr/` |
 | `[DECIDED]` | Decision made — must be recorded as an ADR (`docs/adr/NNN-*.md`) |
 | `[OPEN]` | Unresolved — see [open-questions.md](./open-questions.md) |
 | `[FACT]` | Verified against external docs / version data |
@@ -19,8 +19,11 @@ Backend service for **tour offer search**, integrated via **MCP (Model Context P
 
 External AI agent calls our MCP tools:
 
-1. `search_tours` — creates a search task, returns `job_id` **immediately** (non-blocking).
-2. `get_search_results` — fetches results when they are ready.
+1. `list_regions` — the only source of valid region ids; the agent must not invent one.
+2. `search_tours` — creates a search task, returns `job_id` **immediately** (non-blocking).
+3. `get_search_results` — fetches results when they are ready, **paginated**.
+
+Two more tools are specified but not in the mandatory set: `cancel_search` (optional) and `list_recent_searches` (**blocked** until caller identity exists). See [mcp-tools.md](./mcp-tools.md).
 
 In the background the service scrapes **TourVisor.ru**, collects suitable offers, and stores them in PostgreSQL.
 

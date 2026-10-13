@@ -25,6 +25,7 @@ These change the shape of the code. They cannot be deferred to "later, while cod
 | 8 | **Anti-bot** — proxy pool, UA rotation | **Out of scope** until legal review + ADR, see [scraping.md](./scraping.md#the-contradiction-that-had-to-be-resolved) |
 | 9 | **Monitoring** — Prometheus / OpenTelemetry | OpenTelemetry from the start; metrics: jobs by status, parse success/failure, scrape duration, browser RSS |
 | 10 | **Secrets in production** — Vault / AWS Secrets Manager / plain env | Plain env vars for the first deployment; a secret manager is a later, explicit step |
+| 11 | **PostgreSQL version** — what is deployed | Not pinned anywhere; pin it before any `uuidv7()` / version-gated feature claim (see [database.md](./database.md#uuid-vs-uuid7)) |
 
 ## Already decided (must be written as ADRs before coding)
 
@@ -34,14 +35,20 @@ These change the shape of the code. They cannot be deferred to "later, while cod
 | Migration references the runtime `DbContext`, no second model | [architecture.md](./architecture.md) |
 | No secrets in committed files, including examples | [conventions.md](./conventions.md) |
 | `BackgroundService` is started by the Worker only | [runtime.md](./runtime.md) |
-| Job claim = atomic CAS + lease + recovery pass | [domain.md](./domain.md), [runtime.md](./runtime.md) |
+| Job claim = atomic CAS + lease + recovery pass | [domain.md](./domain.md), [runtime.md](./runtime.md) — mechanism fixed in [database.md](./database.md#job-claim-mechanism); needs its own ADR |
 | Partial parse = `Completed` + `Degraded` | [scraping.md](./scraping.md) |
 | Error taxonomy with `Retryable` | [domain.md](./domain.md) |
 | `get_search_results` is paginated, never unbounded | [mcp-tools.md](./mcp-tools.md) |
+| Offer cursor = rank `(price, hotel_stars, id)`, not `(created_at, id)` | [mcp-tools.md](./mcp-tools.md#pagination--mandatory) |
 | `list_regions` exists so the agent cannot invent regions | [mcp-tools.md](./mcp-tools.md) |
+| Regions are a catalog entity, `TourOffer.RegionId` is an FK | [domain.md](./domain.md#region-catalog) |
+| No `idempotency_key` — dedupe is server-derived | [domain.md](./domain.md#identity-and-dedupe) |
+| `Warnings` is a native PG array column, not a child table | [database.md](./database.md#warnings-column-representation) |
 | Honest UA, no evasion by default | [scraping.md](./scraping.md) |
 | `Singleton` is for shared state, not for stateless helpers | [conventions.md](./conventions.md) |
 
 ## Repo state
 
-The repo currently contains **only `docs/`** — no sources, no `.gitignore`, no CI, no `.editorconfig`, no license, no `docs/adr/`. Every rule in these docs is `[PLANNED]` until the artifact exists.
+`[FACT]` verified with `git ls-files` and `git status`: the repo tracks `docs/`, `README.md`, `AGENTS.md` and `.gitignore` — 11 tracked files, one commit. **Not** present: sources, tests, CI, `.editorconfig`, a license, `docs/adr/`. Every rule about those artifacts is `[PLANNED]` until the artifact exists; rules about `.gitignore` are not.
+
+The one untracked file that should be tracked is `AGENTS.md` (it is operational instructions, not documentation). Scratch helpers (`.tmp-*.js`) must stay gitignored — see the `.tmp-*` pattern in [.gitignore](../.gitignore).

@@ -41,7 +41,9 @@ The lease is what makes restarts safe:
 
 1. The worker is killed mid-job → the lease is never released → the job stays `InProgress` with an expired `LeaseExpiresAt`.
 2. On startup the worker runs a **recovery pass**: `InProgress` with `LeaseExpiresAt < now` → back to `Pending`, `Attempt + 1`, `ErrorCode = LEASE_EXPIRED`, `Retryable = true`.
-3. Without this pass a crash leaves a permanently stuck job that no TTL rule will rescue (see [database.md](./database.md#cleanup-ttl)).
+3. The claim itself is an **atomic CAS** (`Pending → InProgress` writing `LeaseToken`, `LeaseExpiresAt`, `Attempt + 1` in one statement) — see [Job claim mechanism](./database.md#job-claim-mechanism). A read-then-write is not acceptable: two workers would take the same job.
+4. The recovery query needs its own index — `(status, lease_expires_at)` — see [database.md](./database.md#index-rules). Without it every startup scans the whole table.
+5. Without this pass a crash leaves a permanently stuck job that no TTL rule will rescue (see [database.md](./database.md#cleanup-ttl)).
 
 ## Ports and health
 

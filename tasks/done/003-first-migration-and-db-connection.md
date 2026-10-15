@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | `ready` |
+| **Status** | `done` |
 | **Type** | infra |
 | **Created (UTC)** | `2026-10-15` |
 | **Affected projects** | `TourSearch.Infrastructure.Migration`, `TourSearch.Infrastructure`, `tests/TourSearch.UnitTests` |
@@ -422,3 +422,83 @@ live site.
   committed file → blocks: nothing.
 - **Whether `has-pending-model-changes` exists in EF 10.** → proposed default: **try it**; if absent, use
   the model-snapshot test instead and record which was used → blocks: FR-005's exact wording only.
+  **Resolved:** it exists in EF 10.0.12 and reports `No changes have been made to the model since the
+  last migration.` Both it and the snapshot test were used.
+
+## Outcome
+
+| | |
+|---|---|
+| **Completed (UTC)** | `2026-10-15` |
+| **Commit** | `27a6e63` — `feat: add the first migration and the DB connection (tasks/003)` |
+| **Acceptance** | `FR-001`–`FR-007`, `NFR-001`–`NFR-003` pass; build 0/0; `dotnet test` **29 passed, 0 failed** (+11); migration applied to the server and verified there |
+| **ADRs** | [040](./../../docs/adr/040-shared-dbcontext-options-path.md), [041](./../../docs/adr/041-no-automatic-migration-on-startup.md), [042](./../../docs/adr/042-migration-project-root-namespace.md) created |
+| **Left open** | integration tests (no Docker daemon); runtime startup path (steps 7–8); the `[PLANNED]` migration lockfile guard |
+
+### Evidence
+
+| Criterion | Check | Result |
+|---|---|---|
+| `FR-001` | `dotnet ef migrations list --project src/TourSearch.Infrastructure.Migration` | `20261015170159_InitialSchema` |
+| `FR-002` | `RegistrationTests` — lifetimes, shared pool across scopes, fail-fast per variable | pass |
+| `FR-003` | `dotnet ef migrations has-pending-model-changes` | `No changes have been made to the model since the last migration.` |
+| `FR-004` | `database update`, then `information_schema` / `pg_indexes` / `pg_constraint` **on the server** | see below |
+| `FR-005` | second `database update` | `No migrations were applied. The database is already up to date.` |
+| `FR-006` | code vs docs variable names | 5 names match; no secret |
+| `FR-007` | `dotnet ef migrations --help` | `script` exists; `export`/`generate` do not |
+| `NFR-001` | `grep -rn UseSnakeCaseNamingConvention src/` | one production call site |
+| `NFR-002` | server queries, not the generated script | pass |
+| `NFR-003` | grep for `Migrate()` / `EnsureCreated()` | absent |
+
+Server verification (PostgreSQL 17.4, database `tour_search`): tables `regions`, `search_jobs`,
+`tour_offers`; `parameters jsonb`; `warnings _text`; `status`/`error_code` `varchar`; `currency_code`
+`varchar(3)`; `price numeric(12,2)`; every timestamp `timestamptz` (a query for any non-`timestamptz`
+timestamp column returned nothing); eight indexes with `(status, created_at)` and `(scraped_at, id)` in
+the required order; `confdeltype` = `r` (RESTRICT) for `region_id` and `c` (CASCADE) for `search_job_id`.
+
+### Division of labour
+
+`task-developer` wrote the code, generated the migration, and proved build + tests. It **could not** run
+`FR-004`/`FR-005`: `TOURSEARCH_DB_PASSWORD` was not present in its shell, and it declined to invent one —
+correctly, per the task. Those two criteria, the doc corrections (`FR-006`, `FR-007`), ADRs 040–042 and
+the `RootNamespace` finding were done by the orchestrator against the real database.
+
+### Findings
+
+- **`RootNamespace` collision (real, blocking).** With the natural namespace the generated migration does
+  not compile — `TourSearch.Infrastructure.Migration` resolves `Migration` to itself instead of the EF
+  type. Reproduced independently as `error CS0118`. No `using` alias fixes it, because nested namespaces
+  are checked before file-level usings. Fixed with `<RootNamespace>TourSearch</RootNamespace>` so
+  migrations land in `TourSearch.Migrations` and the documented command needs no extra flag. ADR 042.
+- **`__EFMigrationsHistory` is created in `public`, not `tour_search`,** even though the model sets
+  `HasDefaultSchema("tour_search")`. The `tour_search` schema itself is created by the migration
+  (`EnsureSchema`). Default EF behaviour, not a defect, but non-obvious — documented in
+  `docs/architecture.md` so nobody assumes the history table sits beside the tables.
+- **A third options chain remains** in `ModelShapeTests` (from task 002). Deliberately left alone so this
+  change stayed single-purpose; recorded as a known deviation in ADR 040 with the note to switch it when
+  that test is next touched.
+
+### Not verified
+
+- **Integration tests with Testcontainers** — the Docker daemon is not running on this machine (only the
+  CLI is installed). Deferred as its own task; the integration project keeps its `MSTEST0001` suppression
+  and open question 12 stays partly open.
+- **Runtime startup** — `AddInfrastructure()` is not called from any process yet; `dotnet run` for both
+  `Api` and `Worker` still exits `1` (placeholders). That is `AGENTS.md` §2 steps 7–8.
+
+### Accepted debt
+
+- **No migration lockfile / `--check` guard.** Nothing prevents two operators running `database update`
+  concurrently; EF's own migration lock serialises the application step, so the practical risk is a
+  confused operator rather than corruption. Recorded in ADR 041 rather than left implied.
+- **Deployment is still open** (question 4). This task proved a local server works; it presumes no
+  deployment model, and the ordering "migrate before the processes start" is unowned until that question
+  is answered.
+
+### Left open
+
+- **`tour_search` collation is `ru-RU`** (cluster default). No text ordering depends on it yet; revisit if
+  a text sort or case-insensitive lookup is added.
+- **`TOURSEARCH_DB_MAX_POOL`** is documented but unread by `DbConnectionSettings`; Npgsql's default of 5
+  stands until load exists.
+- **`Raw`/Jsonb** on `TourOffer` remains `[PLANNED]`.

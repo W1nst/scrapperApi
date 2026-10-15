@@ -56,11 +56,13 @@ specification — paths inside them are relative to the repo root.
 
 | Skill | Command | Role |
 |---|---|---|
-| Task Creator | `/skill:task-creator <краткое описание>` | Interviews the user, then writes an implementation-ready `tasks/NNN-slug.md` with `Status: ready`. Never writes before confirmation. |
+| Task Creator | `/skill:task-creator <краткое описание>` | Interviews the user, then writes an implementation-ready `tasks/queue/NNN-slug.md` with `Status: ready`. Never writes before confirmation. |
 | Task Solver | `/skill:task-solver <путь к задаче>` | Implements **one** named task, verifies every acceptance criterion locally, reports with real evidence, and moves the file to `tasks/done/` after acceptance. |
 
-The queue contract is in [tasks/README.md](../tasks/README.md). A task that fails is left in
-`tasks/` with `Status: blocked` — it is never marked `done` to clear the queue.
+The queue contract is in [tasks/README.md](../tasks/README.md). New work goes to `tasks/queue/`; a task
+that fails is left there with `Status: blocked` — it is never marked `done` to clear the queue.
+`queue/` and `done/` sit at the same depth, so moving a task between them never changes how its relative
+links resolve.
 
 ## TL;DR rules for the developer agent
 

@@ -82,7 +82,7 @@ does not decide it. See question 12 below.
 | `tests/TourSearch.UnitTests` | csproj only — no tests |
 | `tests/TourSearch.IntegrationTests` | csproj only — no tests |
 | `tests/fixtures/README.md` | fixtures policy — no fixtures yet |
-| `tasks/` | task queue, produced by the `task-creator` skill |
+| `tasks/` | task queue, produced by the `task-creator` skill: new work in `tasks/queue/`, finished work in `tasks/done/` |
 
 **Absent entirely**: `docs/adr/`, CI config, a license, any real implementation code.
 

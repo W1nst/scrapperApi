@@ -22,7 +22,7 @@ Read in this order. Do not skim:
 specifies, decides, reviews and owns git; it does not type the implementation itself.
 
 ```
-task-creator  →  tasks/NNN-*.md          (specification)
+task-creator  →  tasks/queue/NNN-*.md   (specification)
 task-solver   →  orchestrates: delegates the code, verifies behaviour, closes the task
 task-developer → writes the code, proves it builds and the process starts  (never commits)
 ```

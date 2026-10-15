@@ -30,15 +30,15 @@ tests/                   # TourSearch.{UnitTests,IntegrationTests} + fixtures/
 Work is specified and executed by two project-aware Pi skills:
 
 ```
-/skill:task-creator <краткое описание>   →  tasks/NNN-slug.md  (Status: ready)
-/skill:task-solver  tasks/NNN-slug.md    →  code + local verification + report
+/skill:task-creator <краткое описание>   →  tasks/queue/NNN-slug.md  (Status: ready)
+/skill:task-solver  tasks/queue/NNN-slug.md  →  code + local verification + report
                                           →  tasks/done/NNN-slug.md  (Status: done)
 ```
 
 `task-creator` interviews you and writes the specification; it never invents a task and never writes
 before you confirm. `task-solver` implements **one** named task, checks every acceptance criterion
 with real command output, and moves the file only after you accept the result. A task that fails its
-criteria stays in `tasks/` as `Status: blocked`. The queue contract is in [tasks/README.md](./tasks/README.md).
+criteria stays in `tasks/queue/` as `Status: blocked`. The queue contract is in [tasks/README.md](./tasks/README.md).
 
 ## Note
 

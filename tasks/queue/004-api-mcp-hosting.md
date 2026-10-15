@@ -125,7 +125,7 @@ Registered tools, with **exact** names:
 |---|---|---|
 | `list_regions` | `query` (optional string) | `regions[]` (`id`, `label`, `offers_count`), `truncated` |
 | `search_tours` | `region`, `adults`, `children`, `hotel_stars`, `start_date`, `nights`, `price_min`, `price_max`, `currency` | `job_id`, `status`, `reused`, `parameters_hash`, `poll_after_ms` |
-| `get_search_results` | `job_id`, `limit`, `cursor` | job status fields, `offers[]`, `next_cursor`, `offers_total`, `poll_after_ms` |
+| `get_search_results` | `job_id`, `limit`, `cursor` | job status fields, `offers[]`, `page.next_cursor`, `offers_total`, `poll_after_ms` |
 
 - Field names in `outputSchema` are **snake_case**, matching the contract — the SDK's camelCase default is
   overridden with `[property: JsonPropertyName(...)]` (verified to work).
@@ -347,11 +347,20 @@ export ASPNETCORE_URLS=http://127.0.0.1:5080
 dotnet run --project src/TourSearch.Api &
 curl -s http://127.0.0.1:5080/health
 
-# initialize
+# initialize — MUST use a revision that supports the handshake.
+# 2026-07-28 deliberately removed it: that revision is rejected with -32022, and that
+# rejection is the CORRECT behaviour, not a failure. See "Handshake behaviour" in
+# docs/mcp-tools.md and ADR 043.
 curl -s -X POST http://127.0.0.1:5080/mcp \
   -H 'Content-Type: application/json' \
   -H 'Accept: application/json, text/event-stream' \
-  -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2026-07-28","capabilities":{},"clientInfo":{"name":"curl","version":"1"}}}'
+  -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-11-25","capabilities":{},"clientInfo":{"name":"curl","version":"1"}}}'
+
+# the handshake-free path: 2026-07-28 needs no initialize at all
+curl -s -X POST http://127.0.0.1:5080/mcp \
+  -H 'Content-Type: application/json' \
+  -H 'Accept: application/json, text/event-stream' \
+  -d '{"jsonrpc":"2.0","id":2,"method":"tools/list"}'
 
 # tools/list — compare field for field with docs/mcp-tools.md
 curl -s -X POST http://127.0.0.1:5080/mcp \

@@ -12,7 +12,12 @@ namespace TourSearch.UnitTests.Entities;
 [TestClass]
 public sealed class EntityShapeTests
 {
-    private static readonly NullabilityInfoContext NullabilityContext = new();
+    // NOT static: NullabilityInfoContext caches internally and is not safe for concurrent use.
+    // A shared instance makes these tests flaky under the assembly's method-level
+    // parallelization (ADR 036): concurrent Create() calls race on the cache and throw
+    // "An item with the same key has already been added. Key: <type>" (System.ArgumentException).
+    // Reproduced by stressing a shared instance from 32 threads: 4-5 failures per 300 iterations.
+    // Constructing it per call is cheap, so each test gets its own.
 
     [TestMethod]
     public void SearchJob_Properties_MatchTheDocumentedTwentyOneFields()
@@ -171,7 +176,7 @@ public sealed class EntityShapeTests
             var property = entityType.GetProperty(name, BindingFlags.Public | BindingFlags.Instance);
             Assert.IsNotNull(property, $"{entityType.Name}.{name} is missing.");
 
-            var state = NullabilityContext.Create(property).WriteState;
+            var state = new NullabilityInfoContext().Create(property).WriteState;
             var actual = state == NullabilityState.Nullable;
             Assert.AreEqual(
                 nullable,

@@ -7,9 +7,11 @@ Contract of our MCP server toward the external agent. Status legend: [agents.md]
 | Field | Value |
 |---|---|
 | Name | `tour-search` |
-| Version | `0.0.1` `[PLANNED]` |
+| Version | `0.0.1` |
+| Endpoint | `/mcp` `[FACT]` — Streamable HTTP, stateless (`WithHttpTransport`). `Api` references `ModelContextProtocol.AspNetCore` 2.2.0; the bare `ModelContextProtocol` package has **no** `MapMcp` — see [ADR 043](./adr/043-mcp-hosted-over-streamable-http.md) |
 | Transport | **Streamable HTTP** `[DECIDED]` — remote server; `stdio` is not applicable |
 | Protocol revision | `2026-07-28` `[FACT]` — the latest spec revision as of 2026-10; re-verify at implementation time. It **removes protocol-level sessions**: there is no `Mcp-Session-Id` header, no initialize handshake, and every request is self-contained (per-request protocol version + client capabilities). Consequences for our server: no session state to keep alive, `tools/list` is cacheable via `ttlMs`, and `server/discover` replaces the old handshake. Sources: <https://github.com/modelcontextprotocol/modelcontextprotocol> and <https://modelcontextprotocol.io/specification/2026-07-28> |
+| **Handshake behaviour** | `[FACT]` verified by reproduction (2026-10-15, SDK 2.2.0): a revision that removed the handshake cannot be negotiated **through** the handshake. `initialize` with `2026-07-28` is rejected with `-32022` and lists the supported revisions — `2024-11-05`, `2025-03-26`, `2025-06-18`, `2025-11-25`. That is correct, not a defect. Our server therefore accepts **both** styles: a legacy client initializes with `2025-11-25` (or another handshake revision) and gets a normal result; a `2026-07-28` client skips `initialize` entirely and calls `tools/list` / `tools/call` with per-request metadata. Never "fix" the `-32022` by pinning an older revision or hiding the error |
 | `instructions` | short guidance for the agent: call `list_regions` before `search_tours`; poll `get_search_results` using `poll_after_ms`; never invent a region |
 | Auth | `[OPEN]` — **blocking**, see [open-questions.md](./open-questions.md) |
 

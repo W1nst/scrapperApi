@@ -23,8 +23,16 @@
 
   <ItemGroup>
     <!-- MCP server SDK for the three shipped tools (docs/mcp-tools.md).
-         Transport must be Streamable HTTP, not the stdio default. -->
-    <PackageReference Include="ModelContextProtocol" Version="2.1.0" />
+         Transport must be Streamable HTTP, not the stdio default.
+
+         The HTTP hosting — MapMcp, WithHttpTransport, the /mcp endpoint — lives in
+         ModelContextProtocol.AspNetCore, NOT in the bare ModelContextProtocol package:
+         that package ships only the stdio and raw-stream transports (verified against the
+         assemblies of both 2.1.0 and 2.2.0, and by a probe that could not resolve MapMcp).
+         The AspNetCore package brings the core package transitively, so it is referenced
+         alone — keeping the old bare reference alongside it would be a version conflict.
+         See docs/adr/043-mcp-hosted-over-streamable-http.md. -->
+    <PackageReference Include="ModelContextProtocol.AspNetCore" Version="2.2.0" />
   </ItemGroup>
 
 </Project>

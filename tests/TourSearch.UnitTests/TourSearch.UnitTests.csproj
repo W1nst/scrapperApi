@@ -23,6 +23,13 @@
     <ProjectReference Include="../../src/TourSearch.Core/TourSearch.Core.csproj" />
     <ProjectReference Include="../../src/TourSearch.Infrastructure/TourSearch.Infrastructure.csproj" />
     <ProjectReference Include="../../src/TourSearch.Scraper/TourSearch.Scraper.csproj" />
+    <!-- The API's tool surface is asserted by inspection, not over HTTP (NFR-001): the tests
+         build the API's MCP server graph and read the registered tools and their schemas, so a
+         contract drift in ToolSurfaceTests fails the build. Referencing the API project is also
+         what proves the API's own dependency closure does not include TourSearch.Scraper — the
+         API project has no such reference, and this test project's reference to Scraper is for
+         the parser tests, not for the API. -->
+    <ProjectReference Include="../../src/TourSearch.Api/TourSearch.Api.csproj" />
     <!-- The migration snapshot lives in the Migration project, and the migration/model-sync
          test compares it with the runtime model. Referencing it brings the snapshot assembly
          into the test output; it is a design-time-only type, never resolved by a test.

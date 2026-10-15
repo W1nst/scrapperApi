@@ -129,6 +129,12 @@ The secrets patterns are deliberately narrow (`**/secrets`, `**/secrets.*`) rath
 
 Two executables, one shared DI graph shape. Details in [runtime.md](./runtime.md).
 
+> `[FACT]` **MCP hosting needs a separate package.** `MapMcp` / `WithHttpTransport` / `StreamableHttp` live
+> in **`ModelContextProtocol.AspNetCore`**, not in `ModelContextProtocol` — neither 2.1.0 nor 2.2.0 of the
+> latter contains any ASP.NET Core integration (it offers only `WithStdioServerTransport` and
+> `WithStreamServerTransport`). Referencing the bare package and writing `MapMcp` fails to compile. Pinned
+> at 2.2.0 in `TourSearch.Api.csproj`; see [ADR 043](./adr/043-mcp-hosted-over-streamable-http.md).
+
 | Process | Role | Starts `BackgroundService`? |
 |---|---|---|
 | `TourSearch.Api` | MCP endpoint, reads DB | **No** |

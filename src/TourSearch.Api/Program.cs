@@ -1,16 +1,19 @@
-// Placeholder entry point — it exists only so the skeleton builds.
+// TourSearch.Api — the MCP server (Streamable HTTP) and the HTTP surface.
 //
-// The real startup sequence is specified in docs/runtime.md#startup and is
-// deliberately NOT implemented yet: AGENTS.md §2 blocks implementation code
-// until the ADRs for the [DECIDED] items and the blocking questions in
-// docs/open-questions.md are resolved. Replace this file when that gate opens;
-// do not grow it.
+// The process serves two endpoints:
+//   GET  /health  -> server metadata (docs/runtime.md#ports-and-health)
+//   POST /mcp     -> MCP over Streamable HTTP, stateless (docs/mcp-tools.md)
 //
-// The MCP endpoint is Streamable HTTP (docs/mcp-tools.md), not the stdio
-// transport that `dotnet new mcpserver` generates by default.
+// The DI graph is AddInfrastructure() plus the MCP server. This process registers no
+// BackgroundService (ADR 004) and applies no migration at startup (ADR 041); it must not
+// reference TourSearch.Scraper (ADR 001). It writes nothing to the database today: the three
+// tools are honest stubs that name their missing prerequisite instead of inventing data
+// (docs/adr/044-tools-ship-as-stubs-first.md).
 //
-// Exit codes are defined in docs/runtime.md#shutdown:
+// Exit codes (docs/runtime.md#shutdown) are returned from Main, not set with Environment.Exit
+// deep in the stack, so console flushing and host disposal stay ordered:
 //   0 = clean shutdown, 1 = bad configuration, 2 = unrecoverable internal error.
 
-System.Console.Error.WriteLine("TourSearch.Api is not implemented; see docs/runtime.md#startup and AGENTS.md §2.");
-return 1;
+using TourSearch.Api;
+
+return await ApiProgram.RunAsync(args);

@@ -47,7 +47,28 @@ The lease is what makes restarts safe:
 
 ## Ports and health
 
-- **Api**: `GET /health` → `200` + server metadata (name, version, protocol revision). Used by MCP clients and by the supervisor.
+- **Api**: `GET /health` → `200` + server metadata. `[FACT]` the implemented body (snake_case, matching
+the rest of our contract style):
+
+  ```json
+  {
+    "name": "tour-search",
+    "version": "0.0.1",
+    "protocol_revision": "2026-07-28",
+    "mcp_path": "/mcp",
+    "protocol_negotiation": "per-request"
+  }
+  ```
+
+  Used by MCP clients and by the supervisor. The MCP endpoint is at **`/mcp`** (Streamable HTTP,
+  stateless — see [ADR 043](./adr/043-mcp-hosted-over-streamable-http.md)).
+
+  > `protocol_revision` is **operator metadata only**, not a negotiated fact: the SDK exposes no public
+  > source for the negotiated revision ([ADR 043](./adr/043-mcp-hosted-over-streamable-http.md)), so the
+  > value comes from `Mcp:AdvertisedProtocolRevision` (default `2026-07-28`) and is never sent as a protocol
+  > claim. `protocol_negotiation: "per-request"` states that negotiation happens on each request.
+
+  `/health` and `tools/list` work **without a database connection** — neither touches the DB.
 - **Worker**: no HTTP endpoint. Its state is the job queue in the DB plus the logs.
 
 ## Configuration and secrets

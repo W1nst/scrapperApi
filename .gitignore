@@ -13,8 +13,16 @@
 # ------------------------------------------------------------- secrets ------
 # Credentials never come from a committed file. Local dev uses User Secrets,
 # which generates a *.LocalSecrets.env next to the project.
+#
+# NOTE: `*.LocalSecrets.env` matches `TourSearch.LocalSecrets.env` but NOT the bare
+# `LocalSecrets.env` — a leading `*` still requires the dot-prefixed stem. Both forms
+# are covered explicitly, because the bare name is the one the docs' shell example
+# (`set -a; . ./LocalSecrets.env; set +a`) actually tells you to create, and getting it
+# wrong leaks a real password into a public repository.
 *.LocalSecrets.env
 **/*.LocalSecrets.env
+LocalSecrets.env
+**/LocalSecrets.env
 **/appsettings.Local.json
 **/*.local.json
 # Narrow on purpose: this repo runs with core.ignorecase = true, so **/secrets*

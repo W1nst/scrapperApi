@@ -48,7 +48,7 @@ This file is the single source of truth for rules. If [agents.md](./agents.md) c
 
 - `appsettings.json` — defaults only, **no secret fields**.
 - `appsettings.{Environment}.json` — per-environment non-secret overrides.
-- User Secrets (`*.LocalSecrets.env`) — local development.
+- User Secrets (`LocalSecrets.env` at the repo root, or `*.LocalSecrets.env`) — local development. Both patterns are in `.gitignore`; a bare `*` pattern does not cover the bare filename, so both are listed.
 - Env vars — production.
 - Never commit secrets, and never put a literal password into a committed example — even a fake one teaches a policy-violating pattern.
 

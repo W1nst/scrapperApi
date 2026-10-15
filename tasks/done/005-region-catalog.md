@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | `ready` |
+| **Status** | `done` |
 | **Type** | feature |
 | **Created (UTC)** | `2026-10-15` |
 | **Affected projects** | `TourSearch.Core`, `TourSearch.Infrastructure`, `TourSearch.Infrastructure.Migration`, `TourSearch.Api`, `tests/TourSearch.UnitTests` |
@@ -429,6 +429,72 @@ version — only the description's "NOT IMPLEMENTED" suffix is removed.
   source id unreachable → blocks: nothing. Revisit if the catalog grows past a few hundred.
 - **`ParentId` slug vs numeric.** Stored as the parent's **slug**, so the FK is to `Region.Id` and stays
   meaningful if the source's numbering changes. → proposed default: slug → blocks: nothing.
-- **Slug transliteration rule.** Adopted: lowercase, Cyrillic→Latin, spaces and ` - ` → `-`. Verified to
-  produce no collisions across all 85. → proposed default: keep as-is; record in ADR 045 → blocks:
-  nothing.
+- **Slug transliteration rule.** Adopted: lowercase, Cyrillic→Latin, spaces and ` - ` → `-`. → keep as-is;
+  recorded in [ADR 045](./../../docs/adr/045-region-identity-slug-plus-source-id.md) — **including the
+  correction below** → blocks: nothing.
+
+## Outcome
+
+| | |
+|---|---|
+| **Completed (UTC)** | `2026-10-15` |
+| **Commit** | `a15f006` — `feat: add the region catalog and make list_regions real (tasks/005)` |
+| **Acceptance** | `FR-001`–`FR-006`, `NFR-001`–`NFR-003` pass; build 0/0; `dotnet test` **95 passed, 0 failed** (+54); verified on the real DB and over real HTTP |
+| **ADRs** | [045](./../../docs/adr/045-region-identity-slug-plus-source-id.md), [046](./../../docs/adr/046-region-catalog-seeded-by-migration.md) created; [044](./../../docs/adr/044-tools-ship-as-stubs-first.md) updated |
+| **Left open** | the other two tools stay stubs; auth remains open |
+
+### Evidence
+
+| Criterion | Check | Result |
+|---|---|---|
+| `FR-001` | entity + migration | `SourceId` required `varchar(16)`, `ParentId` nullable self-FK; `Source` unchanged |
+| `FR-002` | `psql` on `tour_search` | **85 regions / 20 parents / 65 children**; `kemer→22`, `alanya→19`, `istanbul→277`, `side→23`, `belek→21` |
+| `FR-003` | committed `selectors.json` | `schema_version: 1`, `source: tourvisor`, 85 entries, no `pages`/`fields` sections |
+| `FR-004` | second `database update` | `No migrations were applied` — idempotent |
+| `FR-005` | real HTTP `tools/call` | 85 regions, `truncated: false`, all `offers_count: 0`; filter `кемер`/`КЕМЕР` → `kemer` + `kemer-tsentr`; `%` → 0 regions |
+| `FR-006` | `pg_constraint` | self-FK `r` (RESTRICT); `tour_offers.region_id` still `r` |
+| `NFR-001` | test asserting file ↔ seed agreement | pass |
+| `NFR-002` | `RegionRepository` | one grouped query, no N+1 |
+| `NFR-003` | no network in tests | pass |
+
+`offers_count` proved **computed, not faked**: inserting one `tour_offers` row for `kemer` made the tool
+report `1`, and deleting it returned the count to `0`. Test data cleaned up: `tour_offers` 0 rows,
+`search_jobs` 0 rows, `regions` 85.
+
+### Corrected claim in this task (my error, found by the implementer)
+
+This task asserted the transliteration "produces no collisions across all 85" — **false**. The check
+behind it compared parents and children **separately**, so parent-vs-child collisions were invisible.
+85 regions yield only **83 unique slugs**: `bursa` (parent 268 / child 2517) and `kayseri` (parent 586 /
+child 2335). The uniqueness check must span the **whole** key space.
+
+Resolved by rule, not by special case: a child whose slug collides with its parent's is qualified with
+the parent's slug — `bursa-bursa`, `kayseri-kayseri`. [ADR 045](./../../docs/adr/045-region-identity-slug-plus-source-id.md)
+records both the rule and the failed check that missed it.
+
+A second naming decision: `Стамбул` → **`istanbul`**, not the mechanical `stambul`. Legitimate only
+because the slug is **never sent to the source** — `SourceId` carries the id into the URL — so the slug
+is purely agent- and human-facing. The exonym list is bounded to that single entry.
+
+### Fixed a contradiction in the docs
+
+`docs/domain.md` claimed the catalog is *"seeded at startup from selectors.json"*. That would have
+reintroduced a runtime dependency on a scraping endpoint and contradicted ADR 041's model. Corrected to
+"seeded by migration", recorded in ADR 046.
+
+### Not verified
+
+- **Feature behaviour in general** — the numbers above are evidence, not certification.
+- **Runtime filtering/`Active`/order by an automated test.** No unit test may open a database, and the
+  integration project still has no tests, so a regression there is caught only by the SQL-shape tests.
+- **Label ordering follows the database collation** — deterministic per database, not pinned globally.
+- **`label` values are Cyrillic** and were read through a shell that mangled direct UTF-8 arguments; the
+  tool responses were re-checked with `\u`-escaped JSON, which is how the filter result was confirmed.
+
+### Left open
+
+- **`search_tours` and `get_search_results` remain stubs** (ADR 044). They should be implemented
+  together: `search_tours` creates the job that `get_search_results` reads.
+- **Auth (question 2)** still open; `list_recent_searches` and `cancel_search` stay unregistered.
+- **Catalog freshness** is manual by design (ADR 046): a region the source adds is invisible until
+  someone re-runs the collection and applies a migration.

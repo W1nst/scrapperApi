@@ -50,6 +50,8 @@ Two separate indexes on `status` and `created_at` do **not** serve this query we
 | `tour_offers: region_id` | `list_regions` counts and the `region` filter — without it the count is a full-table `GROUP BY` |
 | `tour_offers: (scraped_at, id)` | the offer pagination cursor — see [mcp-tools.md](./mcp-tools.md#pagination--mandatory) |
 | `tour_offers: price`, `check_in` | optional — only if the agent filters/sorts offers |
+| `regions: (source, source_id)` | **unique** — two regions must not claim one source id; a duplicate would silently attach offers to the wrong region |
+| `regions: parent_id` | the self-FK index, so nesting can be traversed without a scan |
 
 > Ordering on a composite index: verify the exact `.Order(...)` API against the installed EF Core version, or write the index in a hand-written migration. `[OPEN]` — do not paste an unverified call into code.
 
@@ -116,6 +118,20 @@ public class TourSearchDbContext : DbContext
         {
             b.ToTable("regions");
             b.HasKey(x => x.Id);
+
+            // The source's own numeric id — what a parser puts into ?region={SourceId}.
+            // Unique per source, so two regions cannot claim it (ADR 045).
+            b.Property(x => x.SourceId).HasMaxLength(16).IsRequired();
+            b.HasIndex(x => new { x.Source, x.SourceId }).IsUnique();
+
+            // Nesting: the parent's Region.Id slug. Restrict, like every other catalog FK —
+            // a region is deactivated, never deleted (ADR 039/045).
+            b.HasOne<Region>()
+             .WithMany()
+             .HasForeignKey(x => x.ParentId)
+             .OnDelete(DeleteBehavior.Restrict);
+
+            b.Property(x => x.Source).IsRequired();
         });
     }
 }

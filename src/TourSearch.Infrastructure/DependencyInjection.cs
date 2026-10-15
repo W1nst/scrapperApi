@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Npgsql;
+using TourSearch.Infrastructure.Regions;
 
 namespace TourSearch.Infrastructure;
 
@@ -9,8 +10,9 @@ namespace TourSearch.Infrastructure;
 public static class DependencyInjection
 {
     /// <summary>
-    /// Registers <see cref="TourSearchDbContext"/> (<c>Scoped</c>) and the
-    /// <see cref="NpgsqlDataSource"/> pool it runs on (<c>Singleton</c>).
+    /// Registers <see cref="TourSearchDbContext"/> (<c>Scoped</c>), the
+    /// <see cref="NpgsqlDataSource"/> pool it runs on (<c>Singleton</c>), and the scoped readers
+    /// that hang off the context — today <see cref="IRegionRepository"/> for <c>list_regions</c>.
     /// </summary>
     /// <param name="services">The service collection to add to.</param>
     /// <returns>The same collection, for chaining.</returns>
@@ -22,10 +24,10 @@ public static class DependencyInjection
     /// <remarks>
     /// <para>
     /// Lifetimes: the data source is a pool — shared state, one instance for the whole graph
-    /// (<c>Singleton</c>, ADR 015); the context is <c>Scoped</c>, the documented default
-    /// (docs/conventions.md#di). Registration goes through the one shared options chain
-    /// (<see cref="TourSearchDbContextOptionsFactory"/>), so the runtime model and the migration
-    /// model cannot diverge.
+    /// (<c>Singleton</c>, ADR 015); the context and the repositories that read through it are
+    /// <c>Scoped</c>, the documented default (docs/conventions.md#di). Registration goes through
+    /// the one shared options chain (<see cref="TourSearchDbContextOptionsFactory"/>), so the
+    /// runtime model and the migration model cannot diverge.
     /// </para>
     /// <para>
     /// This method registers no hosted service: only the Worker starts a
@@ -49,6 +51,10 @@ public static class DependencyInjection
             TourSearchDbContextOptionsFactory.Configure(
                 options,
                 provider.GetRequiredService<NpgsqlDataSource>()));
+
+        // The region catalog reader behind list_regions. Scoped, like the context it wraps: it is
+        // stateless and must see the scope's context, not a shared one (docs/conventions.md#di).
+        services.AddScoped<IRegionRepository, RegionRepository>();
 
         return services;
     }

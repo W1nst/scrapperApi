@@ -23,6 +23,14 @@ Contract of our MCP server toward the external agent. Status legend: [agents.md]
 
 Added deliberately: without it the agent hallucinates region names, and a wrong region produces a `Completed` job with 0 offers — indistinguishable from a genuinely empty result.
 
+`[DECIDED]` **Implemented** (task 005). It reads the `regions` catalog from the database and computes
+`offers_count` from `tour_offers` in one grouped query (not one query per region). Only `Active = true`
+regions are returned; results are ordered `label` ascending with `id` as tiebreak, so repeated calls are
+stable. The catalog is seeded by migration, never fetched at runtime
+([ADR 046](./adr/046-region-catalog-seeded-by-migration.md)), so this tool makes no external call.
+Current catalog: **85 Турция regions** (20 parents, 65 children) — the response is flat, and a child such
+as `kemer-tsentr` is a valid `search_tours.region` value in its own right.
+
 Input:
 ```json
 { "query": "antalya" }            // optional; empty = all
@@ -36,7 +44,13 @@ Output:
   "truncated": false
 }
 ```
-Rule: the value passed to `search_tours.region` must be an `id` returned by this tool.
+Rule: the value passed to `search_tours.region` must be an `id` returned by this tool. **Never the
+`label`** — labels are display text and are not accepted; and never a source's numeric id, which is the
+parser's business ([ADR 045](./adr/045-region-identity-slug-plus-source-id.md)).
+
+`offers_count` is `0` for a region with no offers yet, and for every region while `tour_offers` is empty.
+`0` is a real count, not a signal that the catalog is missing — the catalog is present whenever regions
+are returned at all.
 
 ### `search_tours`
 

@@ -39,13 +39,30 @@ namespace TourSearch.Migrations
                         .HasColumnType("text")
                         .HasColumnName("label");
 
+                    b.Property<string>("ParentId")
+                        .HasColumnType("text")
+                        .HasColumnName("parent_id");
+
                     b.Property<string>("Source")
                         .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("source");
 
+                    b.Property<string>("SourceId")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("source_id");
+
                     b.HasKey("Id")
                         .HasName("pk_regions");
+
+                    b.HasIndex("ParentId")
+                        .HasDatabaseName("ix_regions_parent_id");
+
+                    b.HasIndex("Source", "SourceId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_regions_source_source_id");
 
                     b.ToTable("regions", "tour_search");
                 });
@@ -261,6 +278,15 @@ namespace TourSearch.Migrations
                         .HasDatabaseName("ix_tour_offers_scraped_at_id");
 
                     b.ToTable("tour_offers", "tour_search");
+                });
+
+            modelBuilder.Entity("TourSearch.Core.Entities.Region", b =>
+                {
+                    b.HasOne("TourSearch.Core.Entities.Region", null)
+                        .WithMany()
+                        .HasForeignKey("ParentId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("fk_regions_regions_parent_id");
                 });
 
             modelBuilder.Entity("TourSearch.Core.Entities.TourOffer", b =>

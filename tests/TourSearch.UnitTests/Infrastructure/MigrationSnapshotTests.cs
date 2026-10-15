@@ -26,18 +26,22 @@ public sealed class MigrationSnapshotTests
     private const string PlaceholderConnectionString = "Host=localhost;Database=toursearch";
 
     [TestMethod]
-    public void Migrations_WhenLoaded_ContainExactlyOneMigrationNamedByMeaning()
+    public void Migrations_WhenLoaded_ContainTheNamedMigrationsInOrder()
     {
         using var dataSource = CreateDataSource();
         using var context = CreateContext(dataSource);
 
         var migrations = context.Database.GetMigrations().ToList();
 
-        Assert.HasCount(1, migrations, $"Expected one migration: {string.Join(", ", migrations)}");
+        Assert.HasCount(2, migrations, $"Expected the initial schema and the region catalog: {string.Join(", ", migrations)}");
         StringAssert.EndsWith(
             migrations[0],
             "_InitialSchema",
             "A migration is named by meaning, never Migration1 (docs/database.md#migrations).");
+        StringAssert.EndsWith(
+            migrations[1],
+            "_AddRegionCatalog",
+            "The region catalog arrives as its own, meaningfully named migration (ADR 046).");
     }
 
     [TestMethod]

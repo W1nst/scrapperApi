@@ -54,3 +54,21 @@ milestone.
   update the tests that assert it.
 - `list_regions` remains the highest-value first implementation, because every other tool depends on a
   valid region id (ADR 010), and it is blocked on the region catalog rather than on the job queue.
+
+## Update 2026-10-15 — `list_regions` is now live
+
+The prediction above came true earlier than the rest: task `005` implemented `list_regions` for real
+(region catalog, computed `offers_count`), while `search_tours` and `get_search_results` remain stubs.
+
+How the ambiguity is handled — the discriminator is now **per tool**, and it is enforced by a test rather
+than by prose:
+
+- `list_regions`'s description no longer carries the "NOT IMPLEMENTED in this build" suffix, and its
+  result is real data.
+- `search_tours` and `get_search_results` **keep** both the description suffix and the stub result text.
+- A test asserts the exact set: only `search_tours` and `get_search_results` still say NOT IMPLEMENTED. A
+  third tool silently becoming live, or a stub losing its marker, fails the build.
+
+So "the discriminator becomes ambiguous" is answered by making the marker explicit per tool and asserting
+it. The remaining two tools should be implemented together where possible — `search_tours` creates the job
+that `get_search_results` reads, so a lone implementation of either is not useful to an agent.

@@ -30,6 +30,23 @@ The previous version said "honest User-Agent" here and asked "do we need User-Ag
 - On markup change — edit the config, not the code.
 - Keep "known good" HTML snapshots for parser regression tests.
 
+- `[FACT]` **The region catalog's real source** (verified 2026-10-15) is an unauthenticated JSON dump
+  endpoint:
+
+  ```
+  https://tourvisor.ru/xml/listdev.php?type=allcountry,country,region,subregions&formmode=1&format=json
+  ```
+
+  It returns ~97 KB with no key and no cookie. Shape: `lists.regions.region[]` of
+  `{ id, name, country, parentid, airport? }`; Турция is `country: 4` with 85 regions (20 parents, 65
+  children). This was pulled **once during planning** and committed; nothing fetches it at runtime
+  ([ADR 046](./adr/046-region-catalog-seeded-by-migration.md)), and no test or CI run may contact the site.
+- `[FACT]` the **search** API is not open: `xml/search.php?region=22` returns `Authorisation Error`. The
+  dump endpoint being readable does not imply the search endpoint is. No evasion is permitted either way
+  ([ADR 014](./adr/014-honest-ua-no-evasion.md)).
+- `{region_id}` in `url_template` means **`Region.SourceId`**, the source's numeric id — never
+  `Region.Id`, which is our slug ([ADR 045](./adr/045-region-identity-slug-plus-source-id.md)).
+
 `selectors.json` must have a schema and a version:
 
 ```json

@@ -185,11 +185,20 @@ public enum JobStatus { Pending, InProgress, Completed, Failed, Cancelled }
 
 | Entity | Field | Notes |
 |---|---|---|
-| `Region` | `Id` | `string` PK, slug — the value the agent passes back as `search_tours.region` |
-| | `Label` | `string` display name |
+| `Region` | `Id` | `string` PK, **slug** — the value the agent passes back as `search_tours.region`, e.g. `"kemer"` |
+| | `Label` | `string` display name, the source's names verbatim (e.g. `"Кемер - центр"`) |
+| | `SourceId` | `string` — the **source's own id** for this region, e.g. `"22"`. This is what a parser substitutes into `?region={region_id}`; `Id` must never be sent to the source |
+| | `ParentId` | `string?` — the **parent's `Region.Id` slug** (`"alanya"`), or `null` for a top-level region. Self-referencing FK |
 | | `Source` | `string` source id; one source per milestone today, kept so a second source is a data change |
 | | `Active` | `bool` — a region the source stopped selling is deactivated, not deleted |
 
-- Seeded at startup from the same config the scraper reads (`selectors.json` region list) — one source of truth for region names.
+- **Scope today: Turkey — 85 regions (20 parents, 65 children)**, `country = 4` at the source. A second
+  country is a data change, not a schema change (ADR 011).
+- `[DECIDED]` **Seeded by migration from committed data**, not at startup — see
+  [ADR 046](./adr/046-region-catalog-seeded-by-migration.md). `selectors.json` holds the same list for
+  humans to edit, and a test asserts the two agree. The application never fetches the region list at
+  runtime.
+- Slug rules (transliteration, parent-collision qualification, the `Стамбул → istanbul` exonym) are fixed
+  in [ADR 045](./adr/045-region-identity-slug-plus-source-id.md).
 - `TourOffer.RegionId` is a foreign key to it, so `Region` is a real entity rather than a bare string on the offer.
 - `offers_count` in the tool output is **computed** from `tour_offers` through the `region` index — see [database.md](./database.md#index-rules). It is not a stored counter, so it cannot drift.

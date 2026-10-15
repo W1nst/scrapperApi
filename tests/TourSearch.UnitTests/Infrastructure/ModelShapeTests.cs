@@ -64,9 +64,9 @@ public sealed class ModelShapeTests
             "tour_offers columns differ from docs/domain.md (Raw is [PLANNED] and must be absent).");
 
         CollectionAssert.AreEquivalent(
-            new[] { "id", "label", "source", "active" },
+            new[] { "id", "label", "source", "active", "source_id", "parent_id" },
             ColumnNames(TableBody(script, "tour_search.regions")),
-            "regions columns differ from docs/domain.md.");
+            "regions columns differ from docs/domain.md#region-catalog (FR-001 adds SourceId and ParentId).");
     }
 
     [TestMethod]
@@ -93,6 +93,61 @@ public sealed class ModelShapeTests
 
         // Price band width from docs/domain.md: decimal(12,2).
         AssertScriptContains(script, "price numeric(12,2) NOT NULL");
+
+        // The catalog's source id: NOT NULL, varchar(16), with no default — a default would let a
+        // region be inserted without its source id (FR-006).
+        AssertScriptContains(script, "source_id character varying(16) NOT NULL");
+        Assert.IsFalse(
+            script.Contains("source_id character varying(16) NOT NULL DEFAULT", StringComparison.Ordinal),
+            "source_id must have no default: the source's id is required, never invented.");
+
+        // A top-level region has no parent, so the column is nullable.
+        Assert.IsTrue(
+            Regex.IsMatch(script, @"^\s*parent_id text,$", RegexOptions.Multiline),
+            $"regions.parent_id must be nullable text. Script:\n{script}");
+    }
+
+    [TestMethod]
+    public void CreateScript_WhenGenerated_DeclaresTheRegionCatalogKeysAndItsSelfForeignKey()
+    {
+        var script = CreateScript();
+
+        // Two regions must not claim the same id of one source.
+        Assert.IsTrue(
+            Regex.IsMatch(
+                script,
+                @"^CREATE UNIQUE INDEX ix_regions_source_source_id ON tour_search\.regions \(source, source_id\);$",
+                RegexOptions.Multiline),
+            $"No unique index on (source, source_id). Script:\n{script}");
+
+        // Nesting is a self-referencing FK, and it restricts deletes exactly like
+        // tour_offers.region_id: a region is deactivated, never deleted (ADR 039).
+        AssertScriptContains(
+            script,
+            "FOREIGN KEY (parent_id) REFERENCES tour_search.regions (id) ON DELETE RESTRICT");
+
+        using var context = CreateContext();
+        var regionType = FindEntityType<Region>(context);
+
+        var parentForeignKey = regionType
+            .GetForeignKeys()
+            .Single(fk => fk.Properties.Single().Name == nameof(Region.ParentId));
+        Assert.AreEqual(typeof(Region), parentForeignKey.PrincipalEntityType.ClrType);
+        Assert.AreEqual(nameof(Region.Id), parentForeignKey.PrincipalKey.Properties.Single().Name);
+        Assert.AreEqual(
+            DeleteBehavior.Restrict,
+            parentForeignKey.DeleteBehavior,
+            "A parent region is deactivated, never deleted — Cascade is EF's default here and would " +
+            "delete every child with its parent (ADR 039).");
+
+        Assert.AreEqual(
+            Region.SourceIdMaxLength,
+            regionType.FindProperty(nameof(Region.SourceId))?.GetMaxLength(),
+            "regions.source_id is varchar(16): the source's ids are short, and the width is part of " +
+            "the contract with selectors.json.");
+        Assert.IsFalse(
+            regionType.FindProperty(nameof(Region.SourceId))!.IsNullable,
+            "regions.source_id is required: a region without the source's own id cannot be searched.");
     }
 
     [TestMethod]

@@ -113,7 +113,7 @@ public sealed class EntityShapeTests
     }
 
     [TestMethod]
-    public void Region_Properties_MatchTheDocumentedFourFields()
+    public void Region_Properties_MatchTheDocumentedSixFields()
     {
         AssertPropertiesMatch(typeof(Region), new Dictionary<string, Type>
         {
@@ -121,6 +121,8 @@ public sealed class EntityShapeTests
             ["Label"] = typeof(string),
             ["Source"] = typeof(string),
             ["Active"] = typeof(bool),
+            ["SourceId"] = typeof(string),
+            ["ParentId"] = typeof(string),
         });
 
         AssertNullableReferences(typeof(Region), new Dictionary<string, bool>
@@ -128,6 +130,8 @@ public sealed class EntityShapeTests
             ["Id"] = false,
             ["Label"] = false,
             ["Source"] = false,
+            ["SourceId"] = false,
+            ["ParentId"] = true,
         });
     }
 

@@ -1,0 +1,497 @@
+{
+  "schema_version": 1,
+  "source": "tourvisor",
+  "updated_at": "2026-10-15",
+  "regions": [
+    {
+      "id": "alanya",
+      "source_id": "19",
+      "label": "Аланья"
+    },
+    {
+      "id": "antalya",
+      "source_id": "20",
+      "label": "Анталья"
+    },
+    {
+      "id": "belek",
+      "source_id": "21",
+      "label": "Белек"
+    },
+    {
+      "id": "bodrum",
+      "source_id": "24",
+      "label": "Бодрум"
+    },
+    {
+      "id": "bolu",
+      "source_id": "669",
+      "label": "Болу"
+    },
+    {
+      "id": "bursa",
+      "source_id": "268",
+      "label": "Бурса"
+    },
+    {
+      "id": "dalaman",
+      "source_id": "25",
+      "label": "Даламан"
+    },
+    {
+      "id": "didim",
+      "source_id": "155",
+      "label": "Дидим"
+    },
+    {
+      "id": "izmir",
+      "source_id": "306",
+      "label": "Измир"
+    },
+    {
+      "id": "kayseri",
+      "source_id": "586",
+      "label": "Кайсери"
+    },
+    {
+      "id": "kappadokiya",
+      "source_id": "599",
+      "label": "Каппадокия"
+    },
+    {
+      "id": "kemer",
+      "source_id": "22",
+      "label": "Кемер"
+    },
+    {
+      "id": "kushadasy",
+      "source_id": "154",
+      "label": "Кушадасы"
+    },
+    {
+      "id": "marmaris",
+      "source_id": "26",
+      "label": "Мармарис"
+    },
+    {
+      "id": "sarykamysh",
+      "source_id": "667",
+      "label": "Сарыкамыш"
+    },
+    {
+      "id": "side",
+      "source_id": "23",
+      "label": "Сиде"
+    },
+    {
+      "id": "istanbul",
+      "source_id": "277",
+      "label": "Стамбул"
+    },
+    {
+      "id": "fethie",
+      "source_id": "27",
+      "label": "Фетхие"
+    },
+    {
+      "id": "cheshme",
+      "source_id": "156",
+      "label": "Чешме"
+    },
+    {
+      "id": "erzurum",
+      "source_id": "278",
+      "label": "Эрзурум"
+    },
+    {
+      "id": "avsallar",
+      "source_id": "2184",
+      "label": "Авсаллар",
+      "parent_id": "alanya"
+    },
+    {
+      "id": "alaniya-tsentr",
+      "source_id": "2185",
+      "label": "Алания-центр",
+      "parent_id": "alanya"
+    },
+    {
+      "id": "inzhekum",
+      "source_id": "2186",
+      "label": "Инжекум",
+      "parent_id": "alanya"
+    },
+    {
+      "id": "kestel",
+      "source_id": "2187",
+      "label": "Кестель",
+      "parent_id": "alanya"
+    },
+    {
+      "id": "konakly",
+      "source_id": "2188",
+      "label": "Конаклы",
+      "parent_id": "alanya"
+    },
+    {
+      "id": "mahmutlar",
+      "source_id": "2189",
+      "label": "Махмутлар",
+      "parent_id": "alanya"
+    },
+    {
+      "id": "obakoy",
+      "source_id": "2190",
+      "label": "Обакой",
+      "parent_id": "alanya"
+    },
+    {
+      "id": "okurdzhalar",
+      "source_id": "2191",
+      "label": "Окурджалар",
+      "parent_id": "alanya"
+    },
+    {
+      "id": "tyurkler",
+      "source_id": "2192",
+      "label": "Тюрклер",
+      "parent_id": "alanya"
+    },
+    {
+      "id": "antaliya-tsentr",
+      "source_id": "2193",
+      "label": "Анталия-центр",
+      "parent_id": "antalya"
+    },
+    {
+      "id": "demre",
+      "source_id": "2573",
+      "label": "Демре",
+      "parent_id": "antalya"
+    },
+    {
+      "id": "kash",
+      "source_id": "2563",
+      "label": "Каш",
+      "parent_id": "antalya"
+    },
+    {
+      "id": "konyaalty",
+      "source_id": "2194",
+      "label": "Коньяалты",
+      "parent_id": "antalya"
+    },
+    {
+      "id": "kundu",
+      "source_id": "2195",
+      "label": "Кунду",
+      "parent_id": "antalya"
+    },
+    {
+      "id": "lara",
+      "source_id": "2196",
+      "label": "Лара",
+      "parent_id": "antalya"
+    },
+    {
+      "id": "belek-tsentr",
+      "source_id": "2231",
+      "label": "Белек-центр",
+      "parent_id": "belek"
+    },
+    {
+      "id": "bogazkent",
+      "source_id": "2232",
+      "label": "Богазкент",
+      "parent_id": "belek"
+    },
+    {
+      "id": "iskele",
+      "source_id": "2233",
+      "label": "Искеле",
+      "parent_id": "belek"
+    },
+    {
+      "id": "kadrie",
+      "source_id": "2234",
+      "label": "Кадрие",
+      "parent_id": "belek"
+    },
+    {
+      "id": "bitez",
+      "source_id": "2206",
+      "label": "Битез",
+      "parent_id": "bodrum"
+    },
+    {
+      "id": "bodrum-tsentr",
+      "source_id": "2207",
+      "label": "Бодрум - центр",
+      "parent_id": "bodrum"
+    },
+    {
+      "id": "gyumbet",
+      "source_id": "2208",
+      "label": "Гюмбет",
+      "parent_id": "bodrum"
+    },
+    {
+      "id": "torba",
+      "source_id": "2209",
+      "label": "Торба",
+      "parent_id": "bodrum"
+    },
+    {
+      "id": "turgutreis",
+      "source_id": "2210",
+      "label": "Тургутреис",
+      "parent_id": "bodrum"
+    },
+    {
+      "id": "yalykavak",
+      "source_id": "2211",
+      "label": "Ялыкавак",
+      "parent_id": "bodrum"
+    },
+    {
+      "id": "bursa-bursa",
+      "source_id": "2517",
+      "label": "Бурса",
+      "parent_id": "bursa"
+    },
+    {
+      "id": "uludag",
+      "source_id": "2518",
+      "label": "Улудаг",
+      "parent_id": "bursa"
+    },
+    {
+      "id": "dalyan",
+      "source_id": "2225",
+      "label": "Дальян",
+      "parent_id": "dalaman"
+    },
+    {
+      "id": "sarygerme",
+      "source_id": "2226",
+      "label": "Сарыгерме",
+      "parent_id": "dalaman"
+    },
+    {
+      "id": "kayseri-kayseri",
+      "source_id": "2335",
+      "label": "Кайсери",
+      "parent_id": "kayseri"
+    },
+    {
+      "id": "erdzhies",
+      "source_id": "2336",
+      "label": "Эрджиес",
+      "parent_id": "kayseri"
+    },
+    {
+      "id": "nevshehir",
+      "source_id": "2406",
+      "label": "Невшехир",
+      "parent_id": "kappadokiya"
+    },
+    {
+      "id": "urgup",
+      "source_id": "2407",
+      "label": "Ургуп",
+      "parent_id": "kappadokiya"
+    },
+    {
+      "id": "beldibi",
+      "source_id": "2219",
+      "label": "Бельдиби",
+      "parent_id": "kemer"
+    },
+    {
+      "id": "goynyuk",
+      "source_id": "2220",
+      "label": "Гойнюк",
+      "parent_id": "kemer"
+    },
+    {
+      "id": "kemer-tsentr",
+      "source_id": "2221",
+      "label": "Кемер - центр",
+      "parent_id": "kemer"
+    },
+    {
+      "id": "kirish",
+      "source_id": "2222",
+      "label": "Кириш",
+      "parent_id": "kemer"
+    },
+    {
+      "id": "tekirova",
+      "source_id": "2223",
+      "label": "Текирова",
+      "parent_id": "kemer"
+    },
+    {
+      "id": "chamyuva",
+      "source_id": "2224",
+      "label": "Чамьюва",
+      "parent_id": "kemer"
+    },
+    {
+      "id": "ichmeler",
+      "source_id": "2227",
+      "label": "Ичмелер",
+      "parent_id": "marmaris"
+    },
+    {
+      "id": "marmaris-tsentr",
+      "source_id": "2228",
+      "label": "Мармарис-центр",
+      "parent_id": "marmaris"
+    },
+    {
+      "id": "sitiler",
+      "source_id": "2229",
+      "label": "Ситилер",
+      "parent_id": "marmaris"
+    },
+    {
+      "id": "turundzh",
+      "source_id": "2230",
+      "label": "Турундж",
+      "parent_id": "marmaris"
+    },
+    {
+      "id": "kumkoy",
+      "source_id": "2197",
+      "label": "Кумкой",
+      "parent_id": "side"
+    },
+    {
+      "id": "kyzylagach",
+      "source_id": "2198",
+      "label": "Кызылагач",
+      "parent_id": "side"
+    },
+    {
+      "id": "kyzylot",
+      "source_id": "2199",
+      "label": "Кызылот",
+      "parent_id": "side"
+    },
+    {
+      "id": "manavgat",
+      "source_id": "2200",
+      "label": "Манавгат",
+      "parent_id": "side"
+    },
+    {
+      "id": "side-tsentr",
+      "source_id": "2201",
+      "label": "Сиде-центр",
+      "parent_id": "side"
+    },
+    {
+      "id": "sorgun",
+      "source_id": "2202",
+      "label": "Соргун",
+      "parent_id": "side"
+    },
+    {
+      "id": "titrengol",
+      "source_id": "2203",
+      "label": "Титренголь",
+      "parent_id": "side"
+    },
+    {
+      "id": "cholakly",
+      "source_id": "2204",
+      "label": "Чолаклы",
+      "parent_id": "side"
+    },
+    {
+      "id": "evrenseki",
+      "source_id": "2205",
+      "label": "Эвренсеки",
+      "parent_id": "side"
+    },
+    {
+      "id": "aksaray",
+      "source_id": "2503",
+      "label": "Аксарай",
+      "parent_id": "istanbul"
+    },
+    {
+      "id": "bakyrkyoy",
+      "source_id": "2505",
+      "label": "Бакыркёй",
+      "parent_id": "istanbul"
+    },
+    {
+      "id": "beyazit",
+      "source_id": "2504",
+      "label": "Бейазит",
+      "parent_id": "istanbul"
+    },
+    {
+      "id": "beyoglu",
+      "source_id": "2213",
+      "label": "Бейоглу",
+      "parent_id": "istanbul"
+    },
+    {
+      "id": "kadykey",
+      "source_id": "2214",
+      "label": "Кадыкей",
+      "parent_id": "istanbul"
+    },
+    {
+      "id": "laleli",
+      "source_id": "2215",
+      "label": "Лалели",
+      "parent_id": "istanbul"
+    },
+    {
+      "id": "sirkedzhi",
+      "source_id": "2216",
+      "label": "Сиркеджи",
+      "parent_id": "istanbul"
+    },
+    {
+      "id": "sultanahmet",
+      "source_id": "2217",
+      "label": "Султанахмет",
+      "parent_id": "istanbul"
+    },
+    {
+      "id": "taksim",
+      "source_id": "2218",
+      "label": "Таксим",
+      "parent_id": "istanbul"
+    },
+    {
+      "id": "fatih",
+      "source_id": "2506",
+      "label": "Фатих",
+      "parent_id": "istanbul"
+    },
+    {
+      "id": "shishli",
+      "source_id": "2507",
+      "label": "Шишли",
+      "parent_id": "istanbul"
+    },
+    {
+      "id": "yalova",
+      "source_id": "2519",
+      "label": "Ялова",
+      "parent_id": "istanbul"
+    },
+    {
+      "id": "olyudeniz",
+      "source_id": "2212",
+      "label": "Олюдениз",
+      "parent_id": "fethie"
+    }
+  ]
+}

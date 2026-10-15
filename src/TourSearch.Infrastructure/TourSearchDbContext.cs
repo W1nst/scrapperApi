@@ -144,6 +144,23 @@ public class TourSearchDbContext : DbContext
 
             // Label stays unbounded text by decision — region names have no agreed ceiling.
             b.Property(x => x.Source).IsRequired();
+
+            // The source's own id ("22"), not Region.Id: the catalog is identified locally by a
+            // slug the agent can read, and remotely by this value (ADR 045). varchar(16) rather
+            // than an integer: it is an opaque source value, and the source is free to change its
+            // scheme.
+            b.Property(x => x.SourceId).IsRequired().HasMaxLength(Region.SourceIdMaxLength);
+
+            // Two regions must not claim the same id of the same source.
+            b.HasIndex(x => new { x.Source, x.SourceId }).IsUnique();
+
+            // Nesting: a region's parent is another region, so this is a self-referencing FK.
+            // Restrict, exactly like TourOffer.RegionId: a region is deactivated, never deleted
+            // (ADR 039), so deleting a parent must not silently delete its children.
+            b.HasOne<Region>()
+                .WithMany()
+                .HasForeignKey(x => x.ParentId)
+                .OnDelete(DeleteBehavior.Restrict);
         });
     }
 }

@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -268,7 +269,6 @@ public sealed class ToolSurfaceTests
     {
         var results = new Dictionary<string, CallToolResult>(StringComparer.Ordinal)
         {
-            ["list_regions"] = RegionTools.ListRegions(query: null, cancellationToken: CancellationToken.None),
             ["search_tours"] = SearchTools.SearchTours(
                 region: "antalya",
                 adults: 2,
@@ -314,6 +314,23 @@ public sealed class ToolSurfaceTests
             resultsText,
             "queried no database",
             "get_search_results queries no database, and the caller must be told (FR-004).");
+    }
+
+    [TestMethod]
+    public void ToolDescriptions_WhenEmitted_MarkExactlyTheUnimplementedToolsAsSuch()
+    {
+        var options = BuildMcpServerOptions();
+
+        // list_regions is implemented: it reads the seeded catalog, so the stub warning is gone
+        // from its description AND from its responses (FR-005, ADR 044).
+        StringAssert.DoesNotMatch(
+            Description(options, "list_regions"),
+            new Regex("NOT IMPLEMENTED"),
+            "list_regions is live: its description must no longer warn that it is not implemented.");
+
+        // The other two are still stubs, and a caller reading only tools/list must be warned.
+        StringAssert.Contains(Description(options, "search_tours"), "NOT IMPLEMENTED in this build");
+        StringAssert.Contains(Description(options, "get_search_results"), "NOT IMPLEMENTED in this build");
     }
 
     private static McpServerOptions BuildMcpServerOptions()

@@ -32,6 +32,8 @@ from `tests/*/*.csproj` comments, and from commit messages.
 | [042](./042-migration-project-root-namespace.md) | Migration project's root namespace is `TourSearch` | Accepted | [architecture.md](../architecture.md#migration-commands) |
 | [043](./043-mcp-hosted-over-streamable-http.md) | MCP is hosted over Streamable HTTP in the API process | Accepted | [mcp-tools.md](../mcp-tools.md#server-metadata) |
 | [044](./044-tools-ship-as-stubs-first.md) | The three tools ship as honest stubs before their behaviour exists | Accepted | [mcp-tools.md](../mcp-tools.md#tool-set) |
+| [045](./045-region-identity-slug-plus-source-id.md) | A region's identity is a slug plus the source's id | Accepted | [domain.md](../domain.md#region-catalog) |
+| [046](./046-region-catalog-seeded-by-migration.md) | The region catalog is seeded by migration from committed data | Accepted | [domain.md](../domain.md#region-catalog) |
 
 Ids `016`–`035` are free. `036` is **reserved**, not "next": both test `.csproj` files already cite
 `docs/adr/036-test-parallelization-policy.md`, so the number is fixed by existing text. Do not compact

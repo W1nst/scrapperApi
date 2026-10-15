@@ -1,4 +1,5 @@
 using System.Net.Sockets;
+using TourSearch.Core.Configuration;
 
 namespace TourSearch.Api;
 
@@ -59,6 +60,17 @@ public static class ApiProgram
             // TOURSEARCH_DB_* variables that AddInfrastructure() requires.
             builder.Services.AddTourSearchApi(builder.Configuration);
 
+            // The committed region catalog is validated before anything binds a port: a malformed
+            // selectors.json must fail startup, not the first job (docs/scraping.md#selectors).
+            // The catalog the tools read is the seeded regions table (ADR 046) — this check is about
+            // the committed data staying usable, not about reading it at runtime.
+            var selectors = LoadSelectors();
+            logger.LogInformation(
+                "selectors.json validated: schema version {SchemaVersion}, source {Source}, regions {RegionCount}",
+                selectors.SchemaVersion,
+                selectors.Source,
+                selectors.Regions.Count);
+
             var app = builder.Build();
             var mcp = app.Services.GetRequiredService<McpEndpointOptions>();
 
@@ -102,5 +114,30 @@ public static class ApiProgram
             logger.LogCritical(exception, "TourSearch.Api stopped with an unrecoverable error.");
             return UnrecoverableErrorExitCode;
         }
+    }
+
+    /// <summary>
+    /// Reads and validates the committed <c>selectors.json</c> that ships next to the application.
+    /// </summary>
+    /// <returns>The validated document.</returns>
+    /// <exception cref="InvalidOperationException">
+    /// The file is missing, or does not satisfy the document's schema. The message names the
+    /// offending file, key and index, so a deployment failure is diagnosable without a debugger
+    /// (docs/conventions.md, docs/scraping.md#selectors).
+    /// </exception>
+    private static SelectorsDocument LoadSelectors()
+    {
+        var path = Path.Combine(AppContext.BaseDirectory, SelectorsDocument.FileName);
+
+        if (!File.Exists(path))
+        {
+            throw new InvalidOperationException(
+                $"Required configuration file {SelectorsDocument.FileName} was not found next to the " +
+                $"application ({path}). It is validated at startup (docs/scraping.md#selectors).");
+        }
+
+        // Parsing does no I/O and lives in Core, which both this process and the scraper can
+        // reference; reading the file is this process's job.
+        return SelectorsDocument.Parse(File.ReadAllText(path));
     }
 }

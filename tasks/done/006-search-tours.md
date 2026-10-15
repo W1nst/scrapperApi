@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | `ready` |
+| **Status** | `done` |
 | **Type** | feature |
 | **Created (UTC)** | `2026-10-15` |
 | **Affected projects** | `TourSearch.Core`, `TourSearch.Infrastructure`, `TourSearch.Api`, `tests/TourSearch.UnitTests` |
@@ -444,3 +444,72 @@ description loses the "NOT IMPLEMENTED" suffix and gains the reuse-window and gl
   nothing.
 - **Whether a `Cancelled` job blocks reuse of an older `Completed` one.** → proposed default: **no** — the
   lookup selects the most recent eligible `Completed` job regardless of other rows → blocks: nothing.
+
+## Outcome
+
+| | |
+|---|---|
+| **Completed (UTC)** | `2026-10-15` |
+| **Commit** | `0f3a649` — `feat: make search_tours create a job (tasks/006)` |
+| **Acceptance** | `FR-001`–`FR-006`, `NFR-001`–`NFR-003` pass; build 0/0; `dotnet test` **145 passed, 0 failed** (+50); verified on the real DB and over real HTTP |
+| **ADRs** | [047](./../../docs/adr/047-reuse-window-separate-from-ttl.md), [048](./../../docs/adr/048-rate-limited-tool-error-code.md), [049](./../../docs/adr/049-parameter-canonicalisation.md) created; [038](./../../docs/adr/038-parameter-validation-at-tool-layer.md) and [044](./../../docs/adr/044-tools-ship-as-stubs-first.md) updated |
+| **Left open** | `get_search_results` is the only stub; no Worker, so jobs stay `Pending`; auth |
+
+### Evidence
+
+| Criterion | Check | Result |
+|---|---|---|
+| `FR-001` | real HTTP `adults=0` | `isError: true`, `PARAM_INVALID`, `field: "adults"` — a **result**, not `-32602` (contrasted against an unknown tool, which is `-32602`) |
+| `FR-001` | unknown region | `PARAM_INVALID`, `field: "region"` |
+| `FR-002` | `ParameterHasherTests` | equal across shuffled key order and `tr-TR`/`en-US`/`ru-RU`; each of the 9 params changes the hash |
+| `FR-003` | fixture-completed job | reused inside the window; the same job aged 25 h → a new job |
+| `FR-004` | `Search__ActiveJobLimit=1` | 2nd distinct request → `RATE_LIMITED`, **no** row; an identical request still returned `reused: true` at the cap |
+| `FR-005` | `psql` on the created row | `Pending`, `attempt=0`, `currency=RUB`, `hash_len=71` with `sha256:` prefix, all lease/error fields null, `timestamptz` |
+| `FR-006` | `tools/list` description | quotes the 24 h window, the `GLOBAL` limit, `RATE_LIMITED`, `PARAM_INVALID`, and `NO WORKER EXISTS IN THIS BUILD` |
+| `NFR-001` | validation only in the tool layer | no `IValidatableObject`, no `CHECK` constraint added |
+| `NFR-002` | reuse checked before the limit | proved at the cap: reuse succeeded, a new job was refused |
+| `NFR-003` | no network, no Worker | `Api` deps still show 0 matches for scraper/playwright |
+
+Rejected requests created **no** row: 5 HTTP calls produced 3 rows, then 1, and the accounting matched every
+time. All test data deleted afterwards (jobs 0, regions 85, offers 0) and no port left bound.
+
+### A real contradiction the implementer found in this task
+
+FR-001's edge-case table said an **absent** `price_min`/`price_max` is accepted while
+`SearchParameters` stores them as **non-nullable** `decimal` — so the persisted row could not represent
+what the request and the hash did. The task contradicted the docs I was writing against.
+
+Resolved by making them `decimal?` (**null = unbounded**). The alternatives were rejected because both
+encode the meaning in a sentinel and lie about it: `decimal.MaxValue` makes the stored row claim a bound
+of 7.9e28 the caller never asked for, and `0` breaks the documented `PriceMax >= PriceMin` invariant
+whenever only `price_min` is given. No migration was needed — `parameters` is a single `jsonb` column.
+`docs/domain.md` and `EntityShapeTests` were updated in the same change.
+
+### Corrected verification step in this task (my error)
+
+The Verification section told the reader to repeat a request to observe `reused: true`. That path is
+**unreachable** in this build: FR-005 creates a `Pending` job, FR-003 refuses to reuse `Pending`, and no
+worker exists to complete it. The implementer reported this instead of silently working around it. The step
+now documents the reachable behaviour and the fixture statement needed to exercise reuse.
+
+### Not verified
+
+- **Feature behaviour is not certified** — the quotes above are observations.
+- **Reuse was proved with a SQL fixture** that sets `completed_at`; the application itself never writes
+  `Completed`, because the Worker does not exist. The reuse path is therefore exercised at the repository
+  and HTTP level, not end-to-end through a real job lifecycle.
+- **Concurrency overshoot** (NFR-002) is reasoned about, not measured: no test drives concurrent calls at
+  the limit.
+- **Label/hash stability across PostgreSQL versions** is untested — the hash is computed in .NET, so the
+  database cannot affect it, but this was not explicitly asserted.
+
+### Left open
+
+- **`get_search_results` is the only remaining stub.** It should ship with the Worker, since a `Pending` job
+  is all it can ever report until something completes one.
+- **No Worker** (`AGENTS.md` §2 step 7). Every created job stays `Pending`; the tool says so, and that text
+  must be removed when the Worker lands.
+- **Auth (question 2).** The limit is global and the description says so; when auth arrives both the limit
+  and that text must change.
+- **Reuse of `InProgress`/`Failed`** stays `[OPEN]`; both are excluded rather than decided here.
+- **`Search:*` defaults are unmeasured** — 24 h, 10, 5000 ms are considered choices, not tuned values.

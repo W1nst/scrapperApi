@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | `ready` |
+| **Status** | `done` |
 | **Type** | feature |
 | **Created (UTC)** | `2026-10-15` |
 | **Affected projects** | `TourSearch.Api`, `tests/TourSearch.UnitTests` |
@@ -428,3 +428,81 @@ No migration is involved:
   `TOURSEARCH_*` name → blocks: nothing.
 - **Where the stub's "not implemented" text lives.** → proposed default: **in the tool response**, not in
   a log line, because the caller is an agent and must see it → blocks: nothing.
+
+## Outcome
+
+| | |
+|---|---|
+| **Completed (UTC)** | `2026-10-15` |
+| **Commit** | `7357119` — `feat: host the MCP server over Streamable HTTP in the API (tasks/004)` |
+| **Acceptance** | `FR-001`–`FR-006`, `NFR-001`–`NFR-003` pass; build 0/0; `dotnet test` **41 passed, 0 failed** (+12); the wire surface exercised over real HTTP |
+| **ADRs** | [043](./../../docs/adr/043-mcp-hosted-over-streamable-http.md), [044](./../../docs/adr/044-tools-ship-as-stubs-first.md) created |
+| **Left open** | auth (question 2); tool behaviour; the integration project's parallelization |
+
+### Evidence
+
+| Criterion | Check | Result |
+|---|---|---|
+| `FR-001` | `GET /health` | `{"name":"tour-search","version":"0.0.1","protocol_revision":"2026-07-28","mcp_path":"/mcp","protocol_negotiation":"per-request"}` |
+| `FR-002` | real HTTP: `initialize` + `tools/list`, no session | valid result naming `tour-search`; stateless |
+| `FR-003` | `tools/list` vs `docs/mcp-tools.md`, field for field | exactly 3 tools; all with `outputSchema`; **zero camelCase keys** |
+| `FR-004` | one `tools/call` per stub | `isError:false`, **no** `structuredContent`, text names the missing prerequisite |
+| `FR-005` | `deps.json` grep; graph test | 0 matches for scraper/playwright; no TourSearch-owned `IHostedService` |
+| `FR-006` | `appsettings.json` + diff grep | non-secret defaults only |
+| `NFR-001` | 12 new unit tests over the registered tools | pass; no browser needed for the surface |
+| `NFR-002` | stub payloads inspected | no fabricated data anywhere |
+| `NFR-003` | ports checked after the run | 5080-5084 free; no external call |
+
+### Three defects found and fixed, one of them mine
+
+1. **The transport package (blocking, real).** `Api.csproj` referenced `ModelContextProtocol` 2.1.0, which
+   has no `MapMcp`/`WithHttpTransport`/`StreamableHttp` in 2.1.0 **or** 2.2.0 — HTTP hosting is the separate
+   `ModelContextProtocol.AspNetCore`. The project could not express its own documented transport. Fixed;
+   ADR 043 records it so nobody re-pins the bare package.
+2. **This task's verification step was wrong (my error).** It told the implementer to `initialize` with
+   `protocolVersion: 2026-07-28`, but that revision removed the handshake, so the SDK rejects it with
+   `-32022` — correctly. The implementer stopped and escalated instead of guessing, which is what the
+   skill requires. Reproduced independently and corrected; `docs/mcp-tools.md` now records the handshake
+   behaviour and the supported list, and ADR 043 documents the reasoning.
+3. **A pre-existing flake in task 002's tests (found here).** `EntityShapeTests` shared one static
+   `NullabilityInfoContext`, which caches internally and is not safe for concurrent use, so the
+   method-level parallelization from ADR 036 raced it. Reproduced by stressing a shared instance from 32
+   threads: 4-5 failures per 300 iterations, with `System.ArgumentException: An item with the same key has
+   already been added. Key: <type>`. Fixed by constructing it per call; 0 failures in 10 consecutive runs.
+   This is a defect in work already merged, not in this task.
+
+### Not verified
+
+- **Tool behaviour** — by design: all three are stubs. No region catalog, no job creation, no pagination.
+- **`SIGTERM` → exit 0** — not exercisable on this Windows checkout: the shell force-terminates, and
+  `taskkill` without `/F` cannot stop a console process. The clean path is `await app.RunAsync()`.
+- **Exit code 2** — no fault injection available.
+- **`npx @modelcontextprotocol/inspector`** — not run (npm toolchain); the equivalent was done with raw curl
+  against `127.0.0.1`. Never against the live site.
+
+### Decisions recorded in the docs
+
+- `Mcp:AdvertisedProtocolRevision` (default `2026-07-28`) is **operator metadata only** — the SDK exposes no
+  public source for the negotiated revision (`McpServerOptions` has no `ProtocolVersion`), so the value is
+  never sent as a protocol claim. `/health` also reports `protocol_negotiation: "per-request"`.
+- `next_cursor` is nested under `page`, matching `docs/mcp-tools.md`; this task's summary had written it flat.
+- `search_tours`' required/optional split is not specified anywhere. Adopted the domain defaults (region,
+  adults, start_date, nights required; children 0, hotel_stars 0, price bounds unbounded, currency RUB).
+  **Flagged for `docs/mcp-tools.md`** if the split should be normative.
+- The SDK registers its own `IdleTrackingBackgroundService` as an `IHostedService` even when stateless, with
+  no option to disable it. ADR 004 governs **our** job loop in the Worker; the rule is unaffected, and the
+  test asserts only that no TourSearch-owned hosted service exists.
+- Tool **parameters** must be snake_case in C# for the input schema to match the contract:
+  `JsonPropertyName` is illegal on parameters (CS0592) and a serializer naming policy does not rename them.
+  Documented in `SearchTools`.
+
+### Left open
+
+- **Auth (question 2, blocking).** Deferred by the user to its own task. No auth mechanism was added;
+  `list_recent_searches` and `cancel_search` stay unregistered.
+- **The first real tool.** `list_regions` is the highest-value next step (ADR 044): everything else depends
+  on a valid region id, and it is blocked on the region catalog, not on the job queue.
+- **Pre-existing 2-4/15-observation flake reported by the implementer** was traced to the shared
+  `NullabilityInfoContext` and fixed. If any residual flake remains, it is a separate finding.
+- **`appsettings.json` has no `DbContext` section** — `DbConnectionSettings` reads `TOURSEARCH_DB_*` only, so
+  such a section would be dead configuration. May need a note in `docs/architecture.md`.

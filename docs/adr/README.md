@@ -27,6 +27,9 @@ from `tests/*/*.csproj` comments, and from commit messages.
 | [037](./037-parameters-mapped-as-complex-type.md) | `SearchParameters` is a complex type mapped to JSONB | Accepted | [database.md](../database.md) |
 | [038](./038-parameter-validation-at-tool-layer.md) | Parameter validation lives at the MCP tool layer | Accepted | [domain.md](../domain.md#error-taxonomy) |
 | [039](./039-region-delete-restrict.md) | `TourOffer.RegionId` restricts deletes; it does not cascade | Accepted | [domain.md](../domain.md#region-catalog) |
+| [040](./040-shared-dbcontext-options-path.md) | One shared `DbContext` options path for design-time and runtime | Accepted | [database.md](../database.md#conventions) |
+| [041](./041-no-automatic-migration-on-startup.md) | Migrations are applied by an explicit step, never at startup | Accepted | [database.md](../database.md#migrations) |
+| [042](./042-migration-project-root-namespace.md) | Migration project's root namespace is `TourSearch` | Accepted | [architecture.md](../architecture.md#migration-commands) |
 
 Ids `016`–`035` are free. `036` is **reserved**, not "next": both test `.csproj` files already cite
 `docs/adr/036-test-parallelization-policy.md`, so the number is fixed by existing text. Do not compact

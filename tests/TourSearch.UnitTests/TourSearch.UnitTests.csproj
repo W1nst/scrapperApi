@@ -23,6 +23,11 @@
     <ProjectReference Include="../../src/TourSearch.Core/TourSearch.Core.csproj" />
     <ProjectReference Include="../../src/TourSearch.Infrastructure/TourSearch.Infrastructure.csproj" />
     <ProjectReference Include="../../src/TourSearch.Scraper/TourSearch.Scraper.csproj" />
+    <!-- The migration snapshot lives in the Migration project, and the migration/model-sync
+         test compares it with the runtime model. Referencing it brings the snapshot assembly
+         into the test output; it is a design-time-only type, never resolved by a test.
+         Microsoft.EntityFrameworkCore.Design does not flow through it (PrivateAssets). -->
+    <ProjectReference Include="../../src/TourSearch.Infrastructure.Migration/TourSearch.Infrastructure.Migration.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -31,6 +36,11 @@
          need EF Core, the Npgsql provider and the snake_case naming plugin directly.
          Versions mirror src/TourSearch.Infrastructure/TourSearch.Infrastructure.csproj. -->
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.12" />
+    <!-- Pinned explicitly, not left to the provider's floor. The Npgsql provider accepts
+         Relational [10.0.4, 11.0.0), so without this line the project resolves 10.0.4 while
+         TourSearch.Infrastructure.Migration resolves 10.0.12 through its design-time package —
+         a mismatch MSBuild reports as MSB3277 (a warning, and warnings are errors here). -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="10.0.12" />
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.3" />
     <PackageReference Include="EFCore.NamingConventions" Version="10.0.1" />
   </ItemGroup>

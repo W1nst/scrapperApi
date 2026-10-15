@@ -9,6 +9,20 @@
 
   <PropertyGroup>
     <OutputType>Library</OutputType>
+    <!-- The Migrations/ namespace EF generates. The project name ends in `.Migration`, and a
+         code namespace `TourSearch.Infrastructure.Migration` would shadow
+         `Microsoft.EntityFrameworkCore.Migrations.Migration` for every file inside it — the
+         generated migration does not compile (CS0118: "Migration" is a namespace, used as a
+         type). Nested namespaces are checked before file-level `using` directives, so no
+         alias fixes it; the namespace has to live outside `TourSearch.Infrastructure`.
+         With this root namespace EF's default output-dir namespace is `TourSearch.Migrations`,
+         so `dotnet ef migrations add NAME` pointed at this project needs no extra
+         namespace option:
+           src/TourSearch.Infrastructure.Migration/                  TourSearch.Infrastructure.Migration
+           src/TourSearch.Infrastructure.Migration/Migrations/       TourSearch.Migrations
+
+         See docs/adr/042-migration-project-root-namespace.md; verified by reproduction (CS0118). -->
+    <RootNamespace>TourSearch</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>
@@ -21,6 +35,14 @@
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.12" />
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.3" />
     <PackageReference Include="EFCore.NamingConventions" Version="10.0.1" />
+    <!-- Required by `dotnet ef`: the tools refuse to run against a startup project
+         without it. Version pinned to the EF Core version above; PrivateAssets keeps
+         it out of every project that references this one, since it is tooling, not
+         application code. -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.12">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
   </ItemGroup>
 
 </Project>

@@ -34,4 +34,26 @@ public interface IRegionRepository
     /// an error.
     /// </returns>
     Task<IReadOnlyList<RegionOffersCount>> ListActiveAsync(string? query, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Answers whether one region id exists in the catalog <b>and</b> is currently sold by the
+    /// source.
+    /// </summary>
+    /// <param name="regionId">
+    /// A region <b>id</b> — the slug <c>list_regions</c> returns. A label, an empty value or an
+    /// invented name is not a region id and is answered with <see langword="false"/>.
+    /// </param>
+    /// <param name="cancellationToken">The request's cancellation token, forwarded to the query.</param>
+    /// <returns>
+    /// <see langword="true"/> only for an active region. An inactive region answers
+    /// <see langword="false"/>: a region the source stopped selling must not be searchable
+    /// (FR-005).
+    /// </returns>
+    /// <remarks>
+    /// This is the catalog half of the <c>search_tours.region</c> rule: without it the tool cannot
+    /// tell "this region does not exist" from "the caller invented a name", and a job for an
+    /// unknown region completes with zero offers — indistinguishable from a genuinely empty result
+    /// (ADR 010).
+    /// </remarks>
+    Task<bool> ExistsActiveAsync(string regionId, CancellationToken cancellationToken);
 }

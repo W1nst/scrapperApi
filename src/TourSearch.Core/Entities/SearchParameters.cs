@@ -35,9 +35,18 @@ public class SearchParameters
     /// <summary>Number of nights.</summary>
     public int Nights { get; set; }
 
-    /// <summary>Lower bound of the price band.</summary>
-    public decimal PriceMin { get; set; }
+    /// <summary>
+    /// Lower bound of the price band; <see langword="null"/> means the caller asked for no lower
+    /// bound. <c>null</c> and <c>0</c> are different requests, and they hash differently —
+    /// <c>0</c> is a bound the caller asked for, absence is not.
+    /// </summary>
+    public decimal? PriceMin { get; set; }
 
-    /// <summary>Upper bound of the price band.</summary>
-    public decimal PriceMax { get; set; }
+    /// <summary>
+    /// Upper bound of the price band; <see langword="null"/> means the caller asked for no upper
+    /// bound. Never encoded as a sentinel (<c>0</c> or <c>decimal.MaxValue</c>): a stored row is
+    /// what a later re-read and a debugger show, and a bound the caller never asked for is a lie
+    /// about the request.
+    /// </summary>
+    public decimal? PriceMax { get; set; }
 }

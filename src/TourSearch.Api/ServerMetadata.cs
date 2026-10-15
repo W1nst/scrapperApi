@@ -26,15 +26,19 @@ public static class ServerMetadata
     /// <summary>
     /// The <c>instructions</c> string sent with the server metadata (docs/mcp-tools.md): call
     /// <c>list_regions</c> before <c>search_tours</c>, poll <c>get_search_results</c> with
-    /// <c>poll_after_ms</c>, and never invent a region.
+    /// <c>poll_after_ms</c>, never invent a region — and, while this build has no Worker, do not
+    /// wait for a result that cannot arrive.
     /// </summary>
     public const string Instructions =
         "TourSearch answers tour-offer questions from a single scraped source. " +
         "Order of work: (1) call list_regions first and choose a region by one of the ids it returns; " +
         "(2) call search_tours with that id — it is non-blocking and returns a job_id and poll_after_ms; " +
         "(3) call get_search_results with that job_id and poll again no sooner than poll_after_ms from the previous answer. " +
-        "Never invent a region: a region that list_regions did not return produces a job that completes with zero offers, " +
-        "which looks exactly like a genuine empty result. " +
-        "In this build the three tools are not implemented yet and say so in their result; " +
-        "do not treat a stub result as data.";
+        "Never invent a region: a region that list_regions did not return is rejected with PARAM_INVALID, " +
+        "and a job for an unknown region would complete with zero offers, which looks exactly like a genuine empty result. " +
+        "NO WORKER EXISTS IN THIS BUILD, and get_search_results is still a stub: a job created by " +
+        "search_tours stays Pending forever and never produces offers, so do not wait for a result " +
+        "that cannot arrive. search_tours also refuses a new job while its GLOBAL active-job limit is " +
+        "reached (that limit is shared by every caller, not per caller); repeating an identical request " +
+        "is always allowed and reuses a recent completed job instead.";
 }

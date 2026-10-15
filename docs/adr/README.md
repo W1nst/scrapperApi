@@ -34,6 +34,9 @@ from `tests/*/*.csproj` comments, and from commit messages.
 | [044](./044-tools-ship-as-stubs-first.md) | The three tools ship as honest stubs before their behaviour exists | Accepted | [mcp-tools.md](../mcp-tools.md#tool-set) |
 | [045](./045-region-identity-slug-plus-source-id.md) | A region's identity is a slug plus the source's id | Accepted | [domain.md](../domain.md#region-catalog) |
 | [046](./046-region-catalog-seeded-by-migration.md) | The region catalog is seeded by migration from committed data | Accepted | [domain.md](../domain.md#region-catalog) |
+| [047](./047-reuse-window-separate-from-ttl.md) | The reuse window (24h) is separate from the job TTL (30d) | Accepted | [domain.md](../domain.md#identity-and-dedupe) |
+| [048](./048-rate-limited-tool-error-code.md) | `RATE_LIMITED` is a tool-level code; the limit is global and computed | Accepted | [mcp-tools.md](../mcp-tools.md#rate-limiting) |
+| [049](./049-parameter-canonicalisation.md) | The parameter hash is built from an explicit canonical form | Accepted | [domain.md](../domain.md#identity-and-dedupe) |
 
 Ids `016`–`035` are free. `036` is **reserved**, not "next": both test `.csproj` files already cite
 `docs/adr/036-test-parallelization-policy.md`, so the number is fixed by existing text. Do not compact

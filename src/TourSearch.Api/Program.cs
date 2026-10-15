@@ -6,9 +6,9 @@
 //
 // The DI graph is AddInfrastructure() plus the MCP server. This process registers no
 // BackgroundService (ADR 004) and applies no migration at startup (ADR 041); it must not
-// reference TourSearch.Scraper (ADR 001). It writes nothing to the database today: the three
-// tools are honest stubs that name their missing prerequisite instead of inventing data
-// (docs/adr/044-tools-ship-as-stubs-first.md).
+// reference TourSearch.Scraper (ADR 001). search_tours writes a Pending job row and returns —
+// nothing claims or executes it, and get_search_results is still an honest stub that names its
+// missing prerequisite instead of inventing data (docs/adr/044-tools-ship-as-stubs-first.md).
 //
 // Exit codes (docs/runtime.md#shutdown) are returned from Main, not set with Environment.Exit
 // deep in the stack, so console flushing and host disposal stay ordered:

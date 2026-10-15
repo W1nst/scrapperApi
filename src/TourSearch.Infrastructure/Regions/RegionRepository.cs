@@ -44,6 +44,20 @@ public sealed class RegionRepository : IRegionRepository
             .ConfigureAwait(false);
     }
 
+    /// <inheritdoc />
+    /// <remarks>
+    /// A single existence check on the primary key, with the <c>active</c> predicate applied in the
+    /// database: no catalog row is materialised, and an inactive region answers
+    /// <see langword="false"/> exactly like an unknown one (FR-001).
+    /// </remarks>
+    public async Task<bool> ExistsActiveAsync(string regionId, CancellationToken cancellationToken)
+    {
+        return await _context.Regions
+            .AsNoTracking()
+            .AnyAsync(region => region.Id == regionId && region.Active, cancellationToken)
+            .ConfigureAwait(false);
+    }
+
     /// <summary>
     /// Returns the SQL that <see cref="ListActiveAsync"/> runs for <paramref name="query"/>, without
     /// running it.

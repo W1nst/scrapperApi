@@ -56,6 +56,12 @@ are returned at all.
 
 Creates a job. **Non-blocking** — returns immediately.
 
+`[DECIDED]` **Implemented** (task 006). It validates every parameter, derives `parameters_hash`, reuses an
+in-window `Completed` job, enforces the active-job limit, and inserts a `Pending` job. It performs **no**
+scraping: no worker exists yet, so a created job stays `Pending` and never produces offers. The tool
+description and the server `instructions` state this plainly so an agent does not wait for a result that
+cannot arrive. That caveat is removed when the Worker ships.
+
 Input:
 ```json
 {
@@ -85,7 +91,15 @@ Output:
 ```
 
 - `reused: true` means an existing `Completed` job with the same `parameters_hash` was returned instead of starting a new one — see [domain.md](./domain.md#identity-and-dedupe).
+- `[DECIDED]` reuse is bounded by a **24-hour window**, not the 30-day job TTL — an older `Completed` job is
+  not reused, because a stale answer is indistinguishable from a fresh one ([ADR 047](./adr/047-reuse-window-separate-from-ttl.md)). Only `Completed` jobs are reused; `Pending`, `InProgress`, `Failed` and
+  `Cancelled` never are.
 - `poll_after_ms` is the server's hint for the first poll. The agent must not poll tighter than this.
+- Rejected requests carry **no** job: `region` must be an `id` from `list_regions` and must be active;
+  `adults >= 1`; `nights >= 1`; `children >= 0`; `hotel_stars` in `0..5` where `0` means any; `start_date`
+  is a date-only ISO-8601 value not before today (UTC); `price_min >= 0` when present; `price_max >= price_min`
+  when both are present; `currency` is `RUB` (case-sensitive) and defaults to `RUB` when absent. An absent
+  `price_min`/`price_max` means **unbounded** and is stored as `null` — it is not the same request as `0`.
 
 ### `get_search_results`
 
@@ -196,16 +210,30 @@ The previous version conflated HTTP `400`/`429` with tool results. They are diff
 | Layer | Mechanism | Use |
 |---|---|---|
 | **Protocol error** | JSON-RPC `error` object | malformed request, unknown tool, bad `job_id` shape, auth failure |
-| **Tool-level error** | tool result with `isError: true` + structured content | invalid parameters (`adults < 1`), rate limit hit, `job_id` not found / not yours |
+| **Tool-level error** | tool result with `isError: true` + structured content | invalid parameters (`adults < 1`) → `PARAM_INVALID`, rate limit hit → `RATE_LIMITED`, `job_id` not found / not yours → `JOB_NOT_FOUND` |
 | **Application state** | normal result, `status: "Failed"` | the job ran and failed — this is data, not an error |
 | **Transport HTTP status** | `400`/`429`/`5xx` on the Streamable HTTP endpoint | only for the transport, never encoded into a tool payload |
 
 `[FACT]` modern MCP clients rely on `structuredContent` + `outputSchema` for machine-readable results; declare `outputSchema` for every tool, otherwise the agent parses free-form text and guesses. `[FACT]` in the JSON-RPC error object, method-not-found / invalid-params is `-32602` (the older `-32002` transport-level code was removed); MCP-specific codes are `-32020` HeaderMismatch, `-32021` MissingRequiredClientCapability, `-32022` UnsupportedProtocolVersion — see <https://modelcontextprotocol.io/specification/2026-07-28/basic>
 
-Unknown or foreign `job_id` → tool-level error with code `JOB_NOT_FOUND` (do not distinguish "does not exist" from "belongs to someone else" — that distinction is an information leak). `JOB_NOT_FOUND` and `PARAM_INVALID` are the only two codes that never reach the DB — see [domain.md](./domain.md#error-taxonomy).
+Unknown or foreign `job_id` → tool-level error with code `JOB_NOT_FOUND` (do not distinguish "does not exist" from "belongs to someone else" — that distinction is an information leak). `JOB_NOT_FOUND`, `PARAM_INVALID` and `RATE_LIMITED` are the only three codes that never reach the DB — see [domain.md](./domain.md#error-taxonomy).
+
+`PARAM_INVALID` carries `field` (the offending parameter) so an agent can correct the request without
+parsing prose; `RATE_LIMITED` carries **no** `field`, because no parameter is at fault and naming one would
+send the agent to fix a request that is already correct. Rejections in this layer create **no** job.
 
 ## Rate limiting
 
 `search_tours` enforces an active-job limit. Until auth exists, "per caller" is undefined — see [open-questions.md](./open-questions.md). Until then the limit is **global** and must be documented as such, not presented as per-agent.
 
 `[DECIDED]` — the limit is computed, not stored: `COUNT(search_jobs WHERE status IN ('Pending','InProgress'))` served by the `(status, created_at)` index (see [database.md](./database.md#index-rules)). A stored counter would need the same CAS discipline as the job claim and would drift on every crash.
+
+- Default **10**, configurable via `Search:ActiveJobLimit`.
+- At the limit, the call is **refused** with `RATE_LIMITED` and **no job is created** — it is not queued.
+- **Reuse is evaluated before the limit.** A reused job consumes no capacity, so it must never be refused
+  by a cap it does not use; otherwise dedupe fails exactly under load.
+- The limit is a **coarse load-shedding guard, not an exact cap**: two concurrent calls can both see
+  `limit - 1` and both insert, yielding `limit + 1`. Accepted deliberately — see
+  [ADR 048](./adr/048-rate-limited-tool-error-code.md).
+- When auth arrives the limit becomes per-caller, and the tool description (which currently states the limit
+  is **global**) must be updated with it.

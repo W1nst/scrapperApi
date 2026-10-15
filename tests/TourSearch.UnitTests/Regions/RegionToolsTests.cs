@@ -107,6 +107,10 @@ public sealed class RegionToolsTests
         internal CancellationToken LastCancellationToken { get; private set; }
 
         /// <inheritdoc />
+        public Task<bool> ExistsActiveAsync(string regionId, CancellationToken cancellationToken) =>
+            Task.FromResult(true);
+
+        /// <inheritdoc />
         public Task<IReadOnlyList<RegionOffersCount>> ListActiveAsync(
             string? query,
             CancellationToken cancellationToken)

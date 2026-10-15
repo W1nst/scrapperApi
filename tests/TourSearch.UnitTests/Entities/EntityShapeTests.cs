@@ -70,8 +70,11 @@ public sealed class EntityShapeTests
             ["HotelStars"] = typeof(int),
             ["StartDate"] = typeof(DateTime),
             ["Nights"] = typeof(int),
-            ["PriceMin"] = typeof(decimal),
-            ["PriceMax"] = typeof(decimal),
+
+            // Nullable by decision (task 006): an absent bound means "no bound", and a sentinel
+            // (0 or decimal.MaxValue) would store a bound the caller never asked for.
+            ["PriceMin"] = typeof(decimal?),
+            ["PriceMax"] = typeof(decimal?),
         });
 
         AssertNullableReferences(typeof(SearchParameters), new Dictionary<string, bool>
@@ -144,14 +147,14 @@ public sealed class EntityShapeTests
     }
 
     [TestMethod]
-    public void JobErrorCode_Members_AreExactlyTheTwelveTaxonomyCodes()
+    public void JobErrorCode_Members_AreExactlyTheDocumentedTaxonomyCodes()
     {
         CollectionAssert.AreEquivalent(
             new[]
             {
                 "NETWORK_TIMEOUT", "NETWORK_UNREACHABLE", "HTTP_429", "HTTP_5XX", "BROWSER_CRASH",
                 "LEASE_EXPIRED", "SELECTOR_NOT_FOUND", "PAGE_STRUCTURE_CHANGED", "ANTI_BOT_DETECTED",
-                "PARAM_INVALID", "JOB_NOT_FOUND", "INTERNAL",
+                "PARAM_INVALID", "JOB_NOT_FOUND", "RATE_LIMITED", "INTERNAL",
             },
             Enum.GetNames<JobErrorCode>());
     }

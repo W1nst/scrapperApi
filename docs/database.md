@@ -45,7 +45,7 @@ Two separate indexes on `status` and `created_at` do **not** serve this query we
 |---|---|
 | `search_jobs: (status, created_at)` | job pickup — `status` is the equality predicate, `created_at` is the order. `(created_at, status)` is the wrong order: it cannot seek to `status = 'Pending'` |
 | `search_jobs: (status, lease_expires_at)` | lease recovery — `WHERE status = 'InProgress' AND lease_expires_at < now` is otherwise a full-table scan on every recovery pass |
-| `search_jobs: parameters_hash` | dedupe/idempotency lookup |
+| `search_jobs: parameters_hash` | dedupe/idempotency lookup. The reuse lookup additionally filters on `status` and `completed_at`, which this index does not cover — accepted while the table is small and per-hash result sets are tiny; add a composite index only if it measurably matters |
 | `tour_offers: search_job_id` | FK index — EF Core creates it automatically; declare explicitly only to rename it |
 | `tour_offers: region_id` | `list_regions` counts and the `region` filter — without it the count is a full-table `GROUP BY` |
 | `tour_offers: (scraped_at, id)` | the offer pagination cursor — see [mcp-tools.md](./mcp-tools.md#pagination--mandatory) |
@@ -185,6 +185,11 @@ The shape that must be implemented, and the one EF Core does **not** give us:
 | Object | TTL | Decision |
 |---|---|---|
 | `SearchJob` | 30 days `[DECIDED]` default, configurable | older jobs are not useful to an agent |
+
+> **Retention is not freshness.** 30 days is how long the row is *kept*; how long a `Completed` result may
+> be *reused as an answer* is a separate, much shorter window — 24 hours by default. See
+> [ADR 047](./adr/047-reuse-window-separate-from-ttl.md) and
+> [domain.md](./domain.md#identity-and-dedupe).
 | `TourOffer` | follows its job | via `DeleteBehavior.Cascade` |
 | HTML snapshots | 7 days `[DECIDED]` default | see [scraping.md](./scraping.md#snapshots) |
 

@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Npgsql;
+using TourSearch.Infrastructure.Jobs;
 using TourSearch.Infrastructure.Regions;
 
 namespace TourSearch.Infrastructure;
@@ -11,8 +12,9 @@ public static class DependencyInjection
 {
     /// <summary>
     /// Registers <see cref="TourSearchDbContext"/> (<c>Scoped</c>), the
-    /// <see cref="NpgsqlDataSource"/> pool it runs on (<c>Singleton</c>), and the scoped readers
-    /// that hang off the context — today <see cref="IRegionRepository"/> for <c>list_regions</c>.
+    /// <see cref="NpgsqlDataSource"/> pool it runs on (<c>Singleton</c>), and the scoped
+    /// repositories that hang off the context — <see cref="IRegionRepository"/> for
+    /// <c>list_regions</c> and <see cref="IJobRepository"/> for <c>search_tours</c>.
     /// </summary>
     /// <param name="services">The service collection to add to.</param>
     /// <returns>The same collection, for chaining.</returns>
@@ -55,6 +57,11 @@ public static class DependencyInjection
         // The region catalog reader behind list_regions. Scoped, like the context it wraps: it is
         // stateless and must see the scope's context, not a shared one (docs/conventions.md#di).
         services.AddScoped<IRegionRepository, RegionRepository>();
+
+        // The job queue as search_tours needs it: reuse lookup, active count, and the creation of a
+        // Pending job. Scoped for the same reason — it is stateless and writes through the scope's
+        // context. It never claims a job: that is the Worker's compare-and-set (ADR 005).
+        services.AddScoped<IJobRepository, JobRepository>();
 
         return services;
     }

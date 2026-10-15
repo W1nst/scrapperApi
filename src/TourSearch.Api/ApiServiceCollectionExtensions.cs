@@ -9,7 +9,8 @@ public static class ApiServiceCollectionExtensions
 {
     /// <summary>
     /// Registers everything the API process resolves: the validated endpoint settings, the
-    /// database layer, and the MCP server with the three shipped tools.
+    /// tuning of <c>search_tours</c>, the database layer, and the MCP server with the three
+    /// shipped tools.
     /// </summary>
     /// <param name="services">The service collection to add to.</param>
     /// <param name="configuration">
@@ -18,13 +19,15 @@ public static class ApiServiceCollectionExtensions
     /// </param>
     /// <returns>The same collection, for chaining.</returns>
     /// <exception cref="InvalidOperationException">
-    /// A required <c>Mcp:*</c> setting is missing or malformed, or a required
-    /// <c>TOURSEARCH_DB_*</c> variable is missing (thrown by <c>AddInfrastructure()</c>).
+    /// A required <c>Mcp:*</c> setting is missing or malformed, a <c>Search:*</c> setting is not a
+    /// positive integer, or a required <c>TOURSEARCH_DB_*</c> variable is missing (thrown by
+    /// <c>AddInfrastructure()</c>).
     /// </exception>
     /// <remarks>
     /// <para>
     /// The graph is deliberately small. <c>AddInfrastructure()</c> registers the single
-    /// <c>TourSearchDbContext</c> (<c>Scoped</c>) and its pool (<c>Singleton</c>) and <b>nothing
+    /// <c>TourSearchDbContext</c> (<c>Scoped</c>), its pool (<c>Singleton</c>) and the scoped
+    /// repositories the tools read and write through — and <b>nothing
     /// else</b>: no <c>BackgroundService</c> — the Worker is the only process that starts one
     /// (ADR 004) — and no <c>Migrate()</c>/<c>EnsureCreated()</c>, because migrations are an
     /// explicit deploy step (ADR 041). <c>TourSearch.Scraper</c> is not referenced anywhere in
@@ -43,6 +46,11 @@ public static class ApiServiceCollectionExtensions
 
         // Fail fast on bad configuration, naming the missing piece.
         services.AddSingleton(McpEndpointOptions.FromConfiguration(configuration));
+
+        // The tuning of search_tours (reuse window, active-job limit, poll hint). Registered as one
+        // shared, validated instance: it is immutable configuration, read on every call and written
+        // never (docs/conventions.md#di).
+        services.AddSingleton(SearchOptions.FromConfiguration(configuration));
 
         services.AddInfrastructure();
 

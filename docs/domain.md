@@ -42,8 +42,8 @@ A tour-search task.
 | `HotelStars` | `int` 1..5, `0` = any/unknown — see [HotelStars](#hotelstars) |
 | `StartDate` | `DateTime` (UTC, day precision) — see [Date types](#date-types) |
 | `Nights` | `int` ≥ 1 |
-| `PriceMin` | `decimal(12,2)` |
-| `PriceMax` | `decimal(12,2)` ≥ `PriceMin` |
+| `PriceMin` | `decimal(12,2)?` — **null = unbounded**; not the same as `0` |
+| `PriceMax` | `decimal(12,2)?` — **null = unbounded**; when both are present, ≥ `PriceMin` |
 
 ### `TourOffer`
 
@@ -102,9 +102,10 @@ A bare `decimal` price is ambiguous the moment a second source or currency appea
 ## Identity and dedupe
 
 - `ParametersHash` = SHA-256 over canonical JSON of `SearchParameters`: sorted keys, normalized region (same form as `list_regions` returns), ISO-8601 dates, explicit currency, no locale-dependent number formatting.
-- `[DECIDED]`: two agents asking the same params within the TTL window reuse the existing `Completed` job — the second call returns the same `job_id`. This is the idempotency guarantee the MCP contract relies on.
+- `[DECIDED]`: two agents asking the same params within the **reuse window** reuse the existing `Completed` job — the second call returns the same `job_id`.
+- `[DECIDED]` — **the reuse window is 24 hours, and it is NOT the 30-day job TTL.** Retention (how long the row is kept) and freshness (how long a result may be presented as an answer) are different questions; using the TTL as the freshness bound would hand back a 29-day-old result indistinguishable from a fresh one. See [ADR 047](./adr/047-reuse-window-separate-from-ttl.md). Configurable via `Search:ReuseWindowHours`. Only a `Completed` job inside the window is reused, and the newest eligible one wins.
 - `[DECIDED]`: there is **no** `idempotency_key` field — not in the `search_tours` input schema and not a column. Dedupe is server-derived from `ParametersHash`, so a client-supplied key would have nowhere to round-trip to. A caller-scoped key becomes meaningful only once caller identity exists (open question 2).
-- `[OPEN]`: reuse of an `InProgress` job (races with cancellation) and of a `Failed` job.
+- `[OPEN]`: reuse of an `InProgress` job (races with cancellation) and of a `Failed` job. **Neither is reused** until this is decided.
 - `[OPEN]`: dedupe of `TourOffer` across jobs. Within one job, offers are deduped by `SourceUrl`.
 
 ## Statuses `SearchJob`
@@ -145,7 +146,12 @@ Pending ──▶ Cancelled   (explicit cancel_search by the agent)
 | `ANTI_BOT_DETECTED` | no | CAPTCHA / block page — see [scraping.md](./scraping.md#anti-bot) |
 | `PARAM_INVALID` | n/a | rejected before the job exists — tool-level only, never persisted; see [mcp-tools.md](./mcp-tools.md#errors--two-different-layers) |
 | `JOB_NOT_FOUND` | n/a | unknown or foreign `job_id` — tool-level only, never persisted; see [mcp-tools.md](./mcp-tools.md#errors--two-different-layers) |
+| `RATE_LIMITED` | n/a | the active-job limit was reached, so no job was created — tool-level only, never persisted. The limit is **global** until auth exists; see [ADR 048](./adr/048-rate-limited-tool-error-code.md) |
 | `INTERNAL` | depends | bug; retry only after a fix |
+
+`PARAM_INVALID`, `JOB_NOT_FOUND` and `RATE_LIMITED` are the three codes that **never reach the DB** — they
+are returned as tool-level errors (`isError: true`), not as protocol errors and not as a `Failed` job.
+`RATE_LIMITED` carries no `field`: no parameter is at fault.
 
 ## C# draft
 

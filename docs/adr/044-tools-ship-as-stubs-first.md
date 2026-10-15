@@ -55,6 +55,17 @@ milestone.
 - `list_regions` remains the highest-value first implementation, because every other tool depends on a
   valid region id (ADR 010), and it is blocked on the region catalog rather than on the job queue.
 
+## Update 2026-10-15 — `search_tours` is now live too
+
+Task `006` implemented `search_tours` for real (validation, canonical hash, dedupe, global limit, `Pending`
+job). **`get_search_results` is now the only stub**, and the discriminator set is again enforced by a test:
+only `get_search_results` carries the "NOT IMPLEMENTED in this build" suffix and stub text.
+
+The no-worker caveat is handled rather than hidden: because nothing executes a job, `search_tours`'
+description and the server `instructions` state plainly that **no worker exists in this build**, that a
+created job stays `Pending`, and that it will never produce offers. An agent is told not to wait for a
+result that cannot arrive. That text is removed when the Worker ships.
+
 ## Update 2026-10-15 — `list_regions` is now live
 
 The prediction above came true earlier than the rest: task `005` implemented `list_regions` for real

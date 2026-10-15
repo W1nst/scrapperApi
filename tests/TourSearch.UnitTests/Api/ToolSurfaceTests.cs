@@ -203,6 +203,18 @@ public sealed class ToolSurfaceTests
         StringAssert.Contains(search, "get_search_results");
         StringAssert.Contains(search, "poll_after_ms");
 
+        // The rules an agent cannot discover from the schema: the reuse window, the GLOBAL limit
+        // and its code, the parameter error, and the fact that no worker exists in this build
+        // (FR-003, FR-004, FR-006).
+        StringAssert.Contains(search, "reuse window");
+        StringAssert.Contains(search, "GLOBAL");
+        StringAssert.Contains(search, "RATE_LIMITED");
+        StringAssert.Contains(search, "PARAM_INVALID");
+        StringAssert.Contains(
+            search,
+            "NO WORKER EXISTS IN THIS BUILD",
+            "A created job is never picked up, and an agent that is not told will wait forever (FR-006).");
+
         var results = Description(options, "get_search_results");
         StringAssert.Contains(results, "poll_after_ms");
         StringAssert.Contains(results, "next_cursor");
@@ -224,6 +236,14 @@ public sealed class ToolSurfaceTests
         StringAssert.Contains(instructions, "get_search_results");
         StringAssert.Contains(instructions, "poll_after_ms");
         StringAssert.Contains(instructions, "Never invent a region");
+
+        // The same caveat as the tool description: the Worker does not exist in this build, so a
+        // created job never runs and the agent must not wait for it (FR-006).
+        StringAssert.Contains(instructions, "NO WORKER EXISTS IN THIS BUILD");
+        StringAssert.Contains(
+            instructions,
+            "GLOBAL",
+            "The active-job limit is global until caller identity exists, and must be described as such.");
     }
 
     [TestMethod]
@@ -265,55 +285,37 @@ public sealed class ToolSurfaceTests
     }
 
     [TestMethod]
-    public void StubTools_WhenCalled_ReturnANormalResultNamingTheMissingPrerequisite()
+    public void StubTool_WhenCalled_ReturnsANormalResultNamingTheMissingPrerequisite()
     {
-        var results = new Dictionary<string, CallToolResult>(StringComparer.Ordinal)
-        {
-            ["search_tours"] = SearchTools.SearchTours(
-                region: "antalya",
-                adults: 2,
-                start_date: new DateOnly(2026, 6, 15),
-                nights: 7,
-                cancellationToken: CancellationToken.None),
-            ["get_search_results"] = SearchTools.GetSearchResults(
-                job_id: Guid.NewGuid(),
-                cancellationToken: CancellationToken.None),
-        };
+        // search_tours went live in task 006: it validates, dedupes, enforces the global limit and
+        // writes a Pending job. get_search_results is the only stub left — reading a job is a
+        // separate task, and a lone implementation of either tool would not be useful to an agent
+        // (ADR 044).
+        var result = SearchTools.GetSearchResults(
+            job_id: Guid.NewGuid(),
+            cancellationToken: CancellationToken.None);
 
-        foreach (var (name, result) in results)
-        {
-            Assert.IsFalse(
-                result.IsError ?? false,
-                $"'{name}' is a normal result, not a tool-level error: the transport worked and the " +
-                "answer is 'not implemented' (FR-004).");
+        Assert.IsFalse(
+            result.IsError ?? false,
+            "The remaining stub is a normal result, not a tool-level error: the transport worked " +
+            "and the answer is 'not implemented'.");
 
-            var text = string.Concat(result.Content.OfType<TextContentBlock>().Select(block => block.Text));
+        var text = string.Concat(result.Content.OfType<TextContentBlock>().Select(block => block.Text));
 
-            StringAssert.Contains(text, "not implemented", $"'{name}' must say it is not implemented.");
-            StringAssert.Contains(
-                text,
-                "Missing prerequisite",
-                $"'{name}' must name the prerequisite that is missing, so the caller is not left guessing.");
-
-            Assert.IsNull(
-                result.StructuredContent,
-                $"'{name}' must not fabricate structured data: an empty or defaulted payload is " +
-                "indistinguishable from a real result (NFR-002).");
-        }
-
-        var searchText = string.Concat(
-            results["search_tours"].Content.OfType<TextContentBlock>().Select(block => block.Text));
+        StringAssert.Contains(text, "not implemented", "It must say it is not implemented.");
         StringAssert.Contains(
-            searchText,
-            "created no job",
-            "search_tours creates no job, and the caller must be told (FR-004).");
-
-        var resultsText = string.Concat(
-            results["get_search_results"].Content.OfType<TextContentBlock>().Select(block => block.Text));
+            text,
+            "Missing prerequisite",
+            "It must name the prerequisite that is missing, so the caller is not left guessing.");
         StringAssert.Contains(
-            resultsText,
+            text,
             "queried no database",
-            "get_search_results queries no database, and the caller must be told (FR-004).");
+            "get_search_results queries no database, and the caller must be told.");
+
+        Assert.IsNull(
+            result.StructuredContent,
+            "It must not fabricate structured data: an empty or defaulted payload is " +
+            "indistinguishable from a real result (ADR 044).");
     }
 
     [TestMethod]
@@ -321,15 +323,18 @@ public sealed class ToolSurfaceTests
     {
         var options = BuildMcpServerOptions();
 
-        // list_regions is implemented: it reads the seeded catalog, so the stub warning is gone
-        // from its description AND from its responses (FR-005, ADR 044).
-        StringAssert.DoesNotMatch(
-            Description(options, "list_regions"),
-            new Regex("NOT IMPLEMENTED"),
-            "list_regions is live: its description must no longer warn that it is not implemented.");
+        // list_regions (task 005) and search_tours (task 006) are implemented, so neither
+        // description warns that it is not — the marker would be a lie about live behaviour.
+        foreach (var liveTool in new[] { "list_regions", "search_tours" })
+        {
+            StringAssert.DoesNotMatch(
+                Description(options, liveTool),
+                new Regex("NOT IMPLEMENTED"),
+                $"'{liveTool}' is live: its description must no longer warn that it is not implemented.");
+        }
 
-        // The other two are still stubs, and a caller reading only tools/list must be warned.
-        StringAssert.Contains(Description(options, "search_tours"), "NOT IMPLEMENTED in this build");
+        // get_search_results is the only stub left, and a caller reading only tools/list must be
+        // warned (ADR 044).
         StringAssert.Contains(Description(options, "get_search_results"), "NOT IMPLEMENTED in this build");
     }
 

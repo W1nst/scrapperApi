@@ -44,6 +44,13 @@ public enum JobErrorCode
     /// <summary>Unknown or foreign job id — tool-level only, never persisted.</summary>
     JOB_NOT_FOUND,
 
+    /// <summary>
+    /// The global active-job limit is reached, so no job was created — tool-level only, never
+    /// persisted. A rejected request is not a <c>Failed</c> job: nothing was written at all
+    /// (docs/mcp-tools.md#rate-limiting).
+    /// </summary>
+    RATE_LIMITED,
+
     /// <summary>A bug. Retry only after a fix.</summary>
     INTERNAL
 }

@@ -32,6 +32,12 @@ job exists.
 
 ## Consequences
 
+> **Update 2026-10-15 — implemented.** The deferred obligation is discharged: task `006` enforces every
+> range in the `search_tours` tool layer, returns `PARAM_INVALID` as a **tool-level** error
+> (`isError: true` + `structuredContent` naming the offending `field`), persists nothing on rejection, and
+> adds no entity validation and no `CHECK` constraint — exactly as decided below. The trigger for
+> revisiting is unchanged and still not met: no second writer of `SearchJob` exists.
+
 - The invalid input never becomes a job, so it never becomes a confusing `Completed`-with-0-offers
   result. The caller gets a structured error naming the offending field, which a `CHECK` constraint
   cannot express.

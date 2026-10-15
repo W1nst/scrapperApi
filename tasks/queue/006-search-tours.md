@@ -380,7 +380,13 @@ curl -s -X POST http://127.0.0.1:5080/mcp -H 'Content-Type: application/json' \
 
 # invalid: adults = 0  -> isError, PARAM_INVALID, field named, NOT a -32602
 # unknown region       -> isError, PARAM_INVALID
-# the same request again -> same job_id, reused: true
+# NOTE: repeating the request here does NOT exercise reuse. FR-005 creates a Pending job,
+# FR-003 refuses to reuse Pending, and no worker exists to move it to Completed - so the
+# repeat correctly returns a NEW job with reused:false. That is the reachable behaviour.
+# To exercise the reuse path, complete the row with a fixture statement first:
+#   update tour_search.search_jobs set status='Completed', completed_at=now() where id='<job_id>';
+# then repeat the identical request -> same job_id, reused: true.
+# Move completed_at 25 hours back and repeat once more -> a NEW job (the window is real).
 ```
 
 Then verify **on the server**:
